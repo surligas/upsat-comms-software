@@ -33,7 +33,7 @@ Src/%.o: ../Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Compiler'
 	@echo $(PWD)
-	arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -D__weak="__attribute__((weak))" -D__packed="__attribute__((__packed__))" -DUSE_HAL_DRIVER -DSTM32F407xx -I"/home/liknus/git/upsat/upsat-comms-software/upsat-comms-workspace/comms/Inc" -I"/home/liknus/git/upsat/upsat-comms-software/upsat-comms-workspace/comms/Drivers/STM32F4xx_HAL_Driver/Inc" -I"/home/liknus/git/upsat/upsat-comms-software/upsat-comms-workspace/comms/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" -I"/home/liknus/git/upsat/upsat-comms-software/upsat-comms-workspace/comms/Drivers/CMSIS/Include" -I"/home/liknus/git/upsat/upsat-comms-software/upsat-comms-workspace/comms/Drivers/CMSIS/Device/ST/STM32F4xx/Include"  -O0 -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
+	arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16 -D__weak="__attribute__((weak))" -D__packed="__attribute__((__packed__))" -DUSE_HAL_DRIVER -DSTM32F407xx -I"/home/manos/upsat-comms-software/upsat-comms-workspace/comms/Inc" -I"/home/manos/upsat-comms-software/upsat-comms-workspace/comms/Drivers/STM32F4xx_HAL_Driver/Inc" -I"/home/manos/upsat-comms-software/upsat-comms-workspace/comms/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy" -I"/home/manos/upsat-comms-software/upsat-comms-workspace/comms/Drivers/CMSIS/Include" -I"/home/manos/upsat-comms-software/upsat-comms-workspace/comms/Drivers/CMSIS/Device/ST/STM32F4xx/Include"  -O0 -g3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
