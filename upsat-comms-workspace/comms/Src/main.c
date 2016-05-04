@@ -54,10 +54,11 @@ UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t aTxBuffer[500];
-uint8_t aRxBuffer[500];
+  uint8_t aTxBuffer[500];
+  uint8_t AX_aRxBuffer[500*8];
+  uint8_t aRxBuffer[500];
 
-uint8_t pkt_size;
+  uint8_t pkt_size;
 
   uint8_t addr_buf[AX25_MAX_ADDR_LEN];
   uint8_t prepare_buf[2*AX25_MAX_FRAME_LEN];
@@ -79,6 +80,7 @@ static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_UART5_Init(void);
 static void MX_USART3_UART_Init(void);
+void ax25_rx_test();
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -127,10 +129,20 @@ int main(void)
   MX_UART5_Init();
   MX_USART3_UART_Init();
 
-  /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOA, RESETN_TX_Pin, GPIO_PIN_SET);//PA10
-  HAL_GPIO_WritePin(PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_SET); //POWER AMP CONTROL
-  	  	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);//csn1
+  /* USER CODE BEGIN 2  */
+
+  /* TX Pins RESETN_TX, PA_CTRL_PIN, CSN1 */
+  //HAL_GPIO_WritePin(GPIOA, RESETN_TX_Pin, GPIO_PIN_SET);//PA10
+  //HAL_GPIO_WritePin(PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_SET); //POWER AMP CONTROL
+  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);//csn1
+
+  /*Rx Pins RESETN_RX, CSN2*/
+
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);//PIN36 2RESETN
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);//PIN36 2CSN
+
+
+
 
 
   	  	uint8_t uart_temp[100];
@@ -138,40 +150,33 @@ int main(void)
   	  uint8_t cc_id;
 
   	  //sprintf((char*)uart_temp, "HELLO %d\n", cc_id);
+
   	  cc_tx_readReg(0x2f8F, &cc_id);
-  	  //sprintf((char*)uart_temp, "HELLO %d\n", cc_id);
-  	  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+
+  	  sprintf((char*)uart_temp, "HELLO %d\n", cc_id);
+  	  HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
   	  registerConfig();
 
   	  HAL_Delay(100);
 
   	  cc_tx_readReg(0x2f8F, &cc_id);
-  	 // sprintf((char*)uart_temp, "INIT finished %d\n", cc_id);
-  	  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  	  sprintf((char*)uart_temp, "INIT finished %d\n", cc_id);
+  	  HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
   	 manualCalibration();
 
   	 cc_tx_readReg(0x2f8F, &cc_id);
-  	 // sprintf((char*)uart_temp, "calibration finished %d\n", cc_id);
-  	  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  	  sprintf((char*)uart_temp, "calibration finished %d\n", cc_id);
+  	  HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
   	  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
 
   	  HAL_Delay(100);
-  //SPI1ReadExtended(0x8F, 0x00);
-  
- /* cc_Tx_INIT();
-  
-  HAL_Delay(100);
-  
-  manualCalibration();
 
-  HAL_Delay(100);*/
 
-  //SPI1WriteSingledata(0x7F, 0x48); //should expext 112 bytes (110 and 2) needs buffer
-  	  aTxBuffer[2] = 0x7e;
+  /*	  aTxBuffer[2] = 0x7e;
   	  aTxBuffer[3] = 0x41;
   	  aTxBuffer[4] = 0x21;
   	  aTxBuffer[5] = 0x61;
@@ -212,7 +217,7 @@ int main(void)
   	  aTxBuffer[40] = 0xa2;
   	  aTxBuffer[41] = 0x9b;
   	  aTxBuffer[42] = 0x9a;
-  	  aTxBuffer[43] = 0x7e;
+  	  aTxBuffer[43] = 0x7e;*/
 
   	  //cc_TX_DATA(aTxBuffer, 42, aRxBuffer);
   	  uint8_t res;
@@ -220,23 +225,9 @@ int main(void)
   	  uint8_t res_fifo[6];
   	  uint8_t loop = 0;
 
-/*
-  //for(uint8_t i = 1; i < 120; i++) { aTxBuffer[i] = 0x48; }
-  //SPI1WriteManydata(aTxBuffer, 120);
-  SPI1WriteManydata(aTxBuffer, 39);
-  
-  SPI1CommandStrobe(STX);   	   //transmit command
-  
-  SPI1CommandStrobe(SRES);         //reset devise. After reset device should be in IDLE mabe no need to
 
-  SPI1CommandStrobe(SFTX);	   //flash Tx fifo. SFTX when in IDLE
-*/
+  	cc_tx_cmd(SRX);   	   //transmit command
 
-
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   while (1)
   {
   /* USER CODE END WHILE */
@@ -246,10 +237,8 @@ int main(void)
 	        HAL_Delay(100);
 
 	        res = cc_tx_readReg(0x2f8F, &cc_id);
-	       // sprintf((char*)uart_temp, "HELLO %x, state: %x\n", cc_id, res);
-	       // HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-
-	        //cc_Tx_INIT();
+	        sprintf((char*)uart_temp, "HELLO %x, state: %x\n", cc_id, res);
+	        //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
 	        HAL_Delay(100);
 
@@ -265,7 +254,7 @@ int main(void)
 	        //sprintf((char*)uart_temp, "1: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
 	        //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
-	        uint8_t tbuf[255];
+	        //uint8_t tbuf[255];
 	        //for(uint8_t i = 0; i < 255; i++) { tbuf[i] = 0x0f; }
 	        //cc_TX_DATA(aTxBuffer, 42, aRxBuffer);
 
@@ -279,7 +268,7 @@ int main(void)
 	        res2[2] = cc_tx_readReg(NUM_TXBYTES, &res_fifo[2]);
 	        res2[3] = cc_tx_readReg(FIFO_NUM_TXBYTES, &res_fifo[3]);
 
-	       // sprintf((char*)uart_temp, "4: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
+	       //sprintf((char*)uart_temp, "4: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
 	        //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 	        //HAL_Delay(1000);
   }
@@ -320,7 +309,7 @@ void SystemClock_Config(void)
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-
+  uint8_t AX_aRxBuffer[500*8];
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
@@ -344,7 +333,7 @@ void MX_I2C1_Init(void)
 
 /* SPI1 init function */
 void MX_SPI1_Init(void)
-{
+{uint8_t AX_aRxBuffer[500*8];
 
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
@@ -387,7 +376,7 @@ void MX_UART5_Init(void)
 {
 
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
+  huart5.Init.BaudRate = 9600;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
@@ -542,7 +531,7 @@ void ax25_test() {
   //}
 
   //printf("len %d", cnt);
-
+  uint8_t AX_aRxBuffer[500*8];
   if(encode_status != AX25_ENC_OK) {
     //throw std::runtime_error("Encoding failed");
     //sprintf((char*)uart_temp, "AX Encoding failed\n");
@@ -774,6 +763,49 @@ HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
 //delay10ms (50);
 HAL_Delay(50);
 return aRxBuffer[1];   //if need be please change this part to return the whole buffer
+
+}
+
+
+
+
+void ax25_rx_test() {
+
+
+  size_t addr_len;
+  size_t prepare_len;
+  size_t encode_len;
+  size_t decode_len;
+  ax25_encode_status_t encode_status;
+  ax25_decode_status_t decode_status;
+
+
+  decode_status = ax25_decode(decode_buf, &decode_len, AX_aRxBuffer, pkt_size);
+
+  if(decode_status != AX25_DEC_OK) {
+    sprintf((char*)uart_temp, "AX Decoded failed\n");
+    HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  }
+  else{
+    //std::cout << "Successful encoding" << std::endl;
+    sprintf((char*)uart_temp, "AX Successful Decoded\n");
+    HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  }
+
+  if(decode_len > 0) {
+    //printf("%c", decode_buf[i]);
+    decode_buf[decode_len] = 0;
+
+    sprintf((char*)uart_temp, "AX: %s\n", decode_buf);
+    HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  }
+  //std::cout << std::endl;
+
+  //std::cout << "Hex Format" << std::endl;
+  //for(size_t i = 0; i < decode_len; i++){
+  //  printf("0x%02x ", decode_buf[i]);
+  //}
+  //std::cout << std::endl;
 
 }
 

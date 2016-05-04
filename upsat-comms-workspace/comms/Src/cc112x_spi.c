@@ -28,15 +28,17 @@ uint8_t cc_tx_readReg(uint16_t add, uint8_t *data) {
 
     
 
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);//PIN36 2CSN
     HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)temp_TxBuffer, (uint8_t *)temp_RxBuffer, len, 5000); //send and receive 3 bytes
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_SPI_TransmitReceive(&hspi2, (uint8_t *)temp_TxBuffer, (uint8_t *)temp_RxBuffer, len, 5000); //send and receive 3 bytes
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);//PIN36 2CSN
         
     HAL_Delay(50);
     *data = temp_RxBuffer[len - 1];
 
-    uint8_t uart_temp[100];
+    //uint8_t uart_temp[100];
    //sprintf((char*)uart_temp, "read Reg %d, %d\n", temp_RxBuffer[0], *data);
     //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
@@ -62,10 +64,12 @@ uint8_t cc_tx_writeReg(uint16_t add, uint8_t data) {
         aTxBuffer[1] = data;         //      send dummy so that i can read data
     }
 
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
     HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)aTxBuffer, (uint8_t *)aRxBuffer, len, 5000); //send and receive 3 bytes
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_SPI_TransmitReceive(&hspi2, (uint8_t *)aTxBuffer, (uint8_t *)aRxBuffer, len, 5000); //send and receive 3 bytes
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
     
     // uint8_t uart_temp[100];
    // sprintf((char*)uart_temp, "write Reg %x\n", aRxBuffer[0]);
@@ -84,10 +88,12 @@ uint8_t cc_TX_DATA(uint8_t *data, uint8_t size, uint8_t *rec_data) {
     size++;
     size++;
     
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
     HAL_Delay(1);
     HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)data, (uint8_t *)rec_data, size, 5000); //send and receive 3 bytes
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
 
       uint8_t res2[6];
       uint8_t res_fifo[6];
@@ -127,11 +133,12 @@ uint8_t cc_tx_cmd(uint8_t CMDStrobe) {
 
     aTxBuffer[0]= CMDStrobe;
 
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);  	//chip select LOw
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);  	//chip select LOw
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
     HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)aTxBuffer, (uint8_t *)aRxBuffer, 1, 5000); //send and receive 1 bytes
-    HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
-
+    HAL_SPI_TransmitReceive(&hspi2, (uint8_t*)aTxBuffer, (uint8_t *)aRxBuffer, 1, 5000); //send and receive 1 bytes
+    //HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
     HAL_Delay(50);
     return aRxBuffer[0];   //if need be please change this part to return the whole buffer
 }
