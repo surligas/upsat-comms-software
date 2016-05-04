@@ -14,7 +14,7 @@
 # Packet length mode = Fixed 
 # Symbol rate = 9.6 
 # RX filter BW = 25.000000 
-*/
+ */
 //
 // Rf settings for CC1120
 //
@@ -22,73 +22,74 @@
 
 typedef struct
 {
-  unsigned int   addr;
-  unsigned short dat;
+	unsigned int   addr;
+	unsigned short dat;
 }registerSetting_t;
 
 
-/*static const registerSetting_t preferredSettings[]=
+static const registerSetting_t TX_preferredSettings[]=
 {
-  {IOCFG3,             0xB0},
-  {IOCFG2,             0x06},
-  {IOCFG1,             0xB0},
-  {IOCFG0,             0x40},
-  {SYNC3,              0x00},
-  {SYNC2,              0x00},
-  {SYNC1,              0x7A},
-  {SYNC0,              0x0E},
-  {SYNC_CFG1,          0x0B},
-  {SYNC_CFG0,          0x0B},
-  {DCFILT_CFG,         0x1C},
-  {PREAMBLE_CFG1,      0x22},
-  {IQIC,               0xC6},
-  {CHAN_BW,            0x08},
-  {MDMCFG0,            0x05},
-  {SYMBOL_RATE2,       0x73},
-  {AGC_REF,            0x20},
-  {AGC_CS_THR,         0x19},
-  {AGC_CFG1,           0xA9},
-  {FIFO_CFG,           0x78},
-  {SETTLING_CFG,       0x03},
-  {FS_CFG,             0x14},
-  //{PKT_CFG0,           0x28},
-  {PKT_CFG0,           0x20},
-  //{PA_CFG2,            0x2D},
-  {PA_CFG2,            0x22},
-  {PA_CFG0,            0x7D},
-  {PKT_LEN,            0xFF},
-  {IF_MIX_CFG,         0x00},
-  {FREQOFF_CFG,        0x22},
-  {FREQ2,              0x6C},
-  {FREQ1,              0xF3},
-  {FREQ0,              0x54},
-  {FS_DIG1,            0x00},
-  {FS_DIG0,            0x5F},
-  {FS_CAL1,            0x40},
-  {FS_CAL0,            0x0E},
-  {FS_DIVTWO,          0x03},
-  {FS_DSM0,            0x33},
-  {FS_DVC0,            0x17},
-  {FS_PFD,             0x50},
-  {FS_PRE,             0x6E},
-  {FS_REG_DIV_CML,     0x14},
-  {FS_SPARE,           0xAC},
-  {FS_VCO4,            0x13},
-  {FS_VCO1,            0xAC},
-  {FS_VCO0,            0xB4},
-  {XOSC5,              0x0E},
-  {XOSC1,              0x03},
-  {DCFILTOFFSET_I1,    0xF8},
-  {DCFILTOFFSET_I0,    0x39},
-  {DCFILTOFFSET_Q1,    0x0E},
-  {DCFILTOFFSET_Q0,    0x9B},
-  {IQIE_I1,            0xEF},
-  {IQIE_I0,            0xDE},
-  {IQIE_Q1,            0x02},
-  {IQIE_Q0,            0x2F},
-  {AGC_GAIN1,          0x13},
-  {SERIAL_STATUS,      0x10},
-};*/
+		{IOCFG3,             0xB0},
+		{IOCFG2,             0x06},
+		{IOCFG1,             0xB0},
+		{IOCFG0,             0x40},
+		{SYNC3,              0x00},
+		{SYNC2,              0x00},
+		{SYNC1,              0x7A},
+		{SYNC0,              0x0E},
+		{SYNC_CFG1,          0x0B},
+		{SYNC_CFG0,          0x0B},
+		{DCFILT_CFG,         0x1C},
+		{PREAMBLE_CFG1,      0x22},
+		{IQIC,               0xC6},
+		{CHAN_BW,            0x08},
+		{MDMCFG0,            0x05},
+		{SYMBOL_RATE2,       0x73},
+		{AGC_REF,            0x20},
+		{AGC_CS_THR,         0x19},
+		{AGC_CFG1,           0xA9},
+		{FIFO_CFG,           0x78},
+		{SETTLING_CFG,       0x03},
+		{FS_CFG,             0x14},
+		//{PKT_CFG0,           0x28},
+		{PKT_CFG0,           0x20},
+		//{PA_CFG2,            0x2D},
+		{PA_CFG2,            0x2F},  //4-PACFG2 0X26, 6dBm 0x2B 2dbm 0x22,8 DBM 2F
+
+		{PA_CFG0,            0x7D},
+		{PKT_LEN,            0xFF},
+		{IF_MIX_CFG,         0x00},
+		{FREQOFF_CFG,        0x22},
+		{FREQ2,              0x6C},
+		{FREQ1,              0xF3},
+		{FREQ0,              0x54},
+		{FS_DIG1,            0x00},
+		{FS_DIG0,            0x5F},
+		{FS_CAL1,            0x40},
+		{FS_CAL0,            0x0E},
+		{FS_DIVTWO,          0x03},
+		{FS_DSM0,            0x33},
+		{FS_DVC0,            0x17},
+		{FS_PFD,             0x50},
+		{FS_PRE,             0x6E},
+		{FS_REG_DIV_CML,     0x14},
+		{FS_SPARE,           0xAC},
+		{FS_VCO4,            0x13},
+		{FS_VCO1,            0xAC},
+		{FS_VCO0,            0xB4},
+		{XOSC5,              0x0E},
+		{XOSC1,              0x03},
+		{DCFILTOFFSET_I1,    0xF8},
+		{DCFILTOFFSET_I0,    0x39},
+		{DCFILTOFFSET_Q1,    0x0E},
+		{DCFILTOFFSET_Q0,    0x9B},
+		{IQIE_I1,            0xEF},
+		{IQIE_I0,            0xDE},
+		{IQIE_Q1,            0x02},
+		{IQIE_Q0,            0x2F},
+		{AGC_GAIN1,          0x13},
+		{SERIAL_STATUS,      0x10},
+};
 
 // Whitening = false
 // Packet length = 255
@@ -107,156 +108,250 @@ typedef struct
 // Manchester enable = false
 // Address config = No address check
 
-static const registerSetting_t preferredSettings[]=
+static const registerSetting_t RX_preferredSettings[]=
 {
-  {IOCFG3,             0xB0},
-  {IOCFG2,             0x06},
-  {IOCFG1,             0xB0},
-  {IOCFG0,             0x40},
-  {SYNC3,              0x00},
-  {SYNC2,              0x00},
-  {SYNC1,              0x7A},
-  {SYNC0,              0x0E},
-  {SYNC_CFG1,          0x0B},
-  {SYNC_CFG0,          0x0B},
-  {DCFILT_CFG,         0x1C},
-  {PREAMBLE_CFG1,      0x22},
-  {IQIC,               0xC6},
-  {CHAN_BW,            0x08},
-  {MDMCFG0,            0x05},
-  {SYMBOL_RATE2,       0x73},
-  {AGC_REF,            0x20},
-  {AGC_CS_THR,         0x19},
-  {AGC_CFG1,           0xA9},
-  {AGC_CFG0,           0xCF},
-  {FIFO_CFG,           0x78},
-  {SETTLING_CFG,       0x03},
-  {FS_CFG,             0x1B},
-  {PKT_CFG0,           0x20},
-  {PA_CFG2,            0x22},
-  {PA_CFG0,            0x7D},
-  {PKT_LEN,            0xFF},
-  {IF_MIX_CFG,         0x00},
-  {FREQOFF_CFG,        0x22},
-  {FREQ2,              0x6D},
-  {FREQ1,              0x60},
-  {FREQ0,              0x52},
-  {FS_DIG1,            0x00},
-  {FS_DIG0,            0x5F},
-  {FS_CAL1,            0x40},
-  {FS_CAL0,            0x0E},
-  {FS_DIVTWO,          0x03},
-  {FS_DSM0,            0x33},
-  {FS_DVC0,            0x17},
-  {FS_PFD,             0x50},
-  {FS_PRE,             0x6E},
-  {FS_REG_DIV_CML,     0x14},
-  {FS_SPARE,           0xAC},
-  {FS_VCO4,            0x13},
-  {FS_VCO1,            0xAC},
-  {FS_VCO0,            0xB4},
-  {XOSC5,              0x0E},
-  {XOSC1,              0x03},
-  {DCFILTOFFSET_I1,    0xF8},
-  {DCFILTOFFSET_I0,    0x39},
-  {DCFILTOFFSET_Q1,    0x0E},
-  {DCFILTOFFSET_Q0,    0x9B},
-  {IQIE_I1,            0xEF},
-  {IQIE_I0,            0xDE},
-  {IQIE_Q1,            0x02},
-  {IQIE_Q0,            0x2F},
-  {AGC_GAIN1,          0x13},
-  {SERIAL_STATUS,      0x10},
+		{IOCFG3,             0xB0},
+		{IOCFG2,             0x06},
+		{IOCFG1,             0xB0},
+		{IOCFG0,             0x40},
+		{SYNC3,              0x00},
+		{SYNC2,              0x00},
+		{SYNC1,              0x7A},
+		{SYNC0,              0x0E},
+		{SYNC_CFG1,          0x0B},
+		{SYNC_CFG0,          0x0B},
+		{DCFILT_CFG,         0x1C},
+		{PREAMBLE_CFG1,      0x22},
+		{IQIC,               0xC6},
+		{CHAN_BW,            0x08},
+		{MDMCFG0,            0x05},
+		{SYMBOL_RATE2,       0x73},
+		{AGC_REF,            0x20},
+		{AGC_CS_THR,         0x19},
+		{AGC_CFG1,           0xA9},
+		{AGC_CFG0,           0xCF},
+		{FIFO_CFG,           0x78},
+		{SETTLING_CFG,       0x03},
+		{FS_CFG,             0x1B},
+		{PKT_CFG0,           0x20},
+		{PA_CFG2,            0x22},
+		{PA_CFG0,            0x7D},
+		{PKT_LEN,            0xFF},
+		{IF_MIX_CFG,         0x00},
+		{FREQOFF_CFG,        0x22},
+		{FREQ2,              0x6D},
+		{FREQ1,              0x60},
+		{FREQ0,              0x52},
+		{FS_DIG1,            0x00},
+		{FS_DIG0,            0x5F},
+		{FS_CAL1,            0x40},
+		{FS_CAL0,            0x0E},
+		{FS_DIVTWO,          0x03},
+		{FS_DSM0,            0x33},
+		{FS_DVC0,            0x17},
+		{FS_PFD,             0x50},
+		{FS_PRE,             0x6E},
+		{FS_REG_DIV_CML,     0x14},
+		{FS_SPARE,           0xAC},
+		{FS_VCO4,            0x13},
+		{FS_VCO1,            0xAC},
+		{FS_VCO0,            0xB4},
+		{XOSC5,              0x0E},
+		{XOSC1,              0x03},
+		{DCFILTOFFSET_I1,    0xF8},
+		{DCFILTOFFSET_I0,    0x39},
+		{DCFILTOFFSET_Q1,    0x0E},
+		{DCFILTOFFSET_Q0,    0x9B},
+		{IQIE_I1,            0xEF},
+		{IQIE_I0,            0xDE},
+		{IQIE_Q1,            0x02},
+		{IQIE_Q0,            0x2F},
+		{AGC_GAIN1,          0x13},
+		{SERIAL_STATUS,      0x10},
 };
 
 
-void registerConfig() {
-  unsigned char writeByte;
-  unsigned i;
-  // Reset radio
-  cc_tx_cmd(SRES);
+void tx_registerConfig() {
+	unsigned char writeByte;
+	unsigned i;
+	// Reset radio
+	cc_tx_cmd(SRES);
 
-  // Write registers to radio
-  for(i = 0; i < (sizeof(preferredSettings)/sizeof(registerSetting_t)); i++) {
-    writeByte = preferredSettings[i].dat;
-    cc_tx_writeReg(preferredSettings[i].addr, writeByte);
-  }
+	// Write registers to radio
+	for(i = 0; i < (sizeof(TX_preferredSettings)/sizeof(registerSetting_t)); i++) {
+		writeByte = TX_preferredSettings[i].dat;
+		cc_tx_writeReg(TX_preferredSettings[i].addr, writeByte);
+	}
 }
+
+
+
+void rx_registerConfig() {
+	unsigned char writeByte;
+	unsigned i;
+	// Reset radio
+	cc_rx_cmd(SRES);
+
+	// Write registers to radio
+	for(i = 0; i < (sizeof(RX_preferredSettings)/sizeof(registerSetting_t)); i++) {
+		writeByte = RX_preferredSettings[i].dat;
+		cc_rx_writeReg(RX_preferredSettings[i].addr, writeByte);
+	}
+}
+
+#define VCDAC_START_OFFSET_Tx 2
+#define FS_VCO2_INDEX_Tx 0
+#define FS_VCO4_INDEX_Tx   1
+#define FS_CHP_INDEX_Tx   2
+
+void manualCalibrationtx() {
+
+	uint8_t original_fs_cal2;
+	uint8_t calResults_for_vcdac_start_high[3];
+	uint8_t calResults_for_vcdac_start_mid[3];
+	uint8_t marcstate;
+	uint8_t writeByte;
+
+	// 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+	writeByte = 0x00;
+	cc_tx_writeReg(FS_VCO2, writeByte);
+
+	// 2) Start with high VCDAC (original VCDAC_START + 2):
+	cc_tx_readReg(FS_CAL2, &original_fs_cal2);
+	writeByte = original_fs_cal2 + VCDAC_START_OFFSET_Tx;
+	cc_tx_writeReg(FS_CAL2, writeByte);
+
+	// 3) Calibrate and wait for calibration to be done
+	//   (radio back in IDLE state)
+	cc_tx_cmd(SCAL);
+
+	do {
+		cc_tx_readReg(MARCSTATE, &marcstate);
+	} while (marcstate != 0x41);
+
+	// 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
+	//    high VCDAC_START value
+	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx]);
+	cc_tx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX_Tx]);
+	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX_Tx]);
+
+	// 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+	writeByte = 0x00;
+	cc_tx_writeReg(FS_VCO2, writeByte);
+
+	// 6) Continue with mid VCDAC (original VCDAC_START):
+	writeByte = original_fs_cal2;
+	cc_tx_writeReg(FS_CAL2, writeByte);
+
+	// 7) Calibrate and wait for calibration to be done
+	//   (radio back in IDLE state)
+	cc_tx_cmd(SCAL);
+
+	do {
+		cc_tx_readReg(MARCSTATE, &marcstate);
+	} while (marcstate != 0x41);
+
+	// 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
+	//    with mid VCDAC_START value
+	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx]);
+	cc_tx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX_Tx]);
+	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX_Tx]);
+
+	// 9) Write back highest FS_VCO2 and corresponding FS_VCO
+	//    and FS_CHP result
+	if (calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx] >
+	calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx]) {
+		writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx];
+		cc_tx_writeReg(FS_VCO2, writeByte);
+		writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX_Tx];
+		cc_tx_writeReg(FS_VCO4, writeByte);
+		writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX_Tx];
+		cc_tx_writeReg(FS_CHP, writeByte);
+	} else {
+		writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx];
+		cc_tx_writeReg(FS_VCO2, writeByte);
+		writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX_Tx];
+		cc_tx_writeReg(FS_VCO4, writeByte);
+		writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX_Tx];
+		cc_tx_writeReg(FS_CHP, writeByte);
+	}
+}
+
 
 #define VCDAC_START_OFFSET 2
 #define FS_VCO2_INDEX 0
 #define FS_VCO4_INDEX 1
 #define FS_CHP_INDEX 2
 
-void manualCalibration() {
+void manualCalibrationrx() {
 
-    uint8_t original_fs_cal2;
-    uint8_t calResults_for_vcdac_start_high[3];
-    uint8_t calResults_for_vcdac_start_mid[3];
-    uint8_t marcstate;
-    uint8_t writeByte;
+	uint8_t original_fs_cal2;
+	uint8_t calResults_for_vcdac_start_high[3];
+	uint8_t calResults_for_vcdac_start_mid[3];
+	uint8_t marcstate;
+	uint8_t writeByte;
 
-    // 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
-    writeByte = 0x00;
-    cc_tx_writeReg(FS_VCO2, writeByte);
+	// 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+	writeByte = 0x00;
+	cc_rx_writeReg(FS_VCO2, writeByte);
 
-    // 2) Start with high VCDAC (original VCDAC_START + 2):
-    cc_tx_readReg(FS_CAL2, &original_fs_cal2);
-    writeByte = original_fs_cal2 + VCDAC_START_OFFSET;
-    cc_tx_writeReg(FS_CAL2, writeByte);
+	// 2) Start with high VCDAC (original VCDAC_START + 2):
+	cc_rx_readReg(FS_CAL2, &original_fs_cal2);
+	writeByte = original_fs_cal2 + VCDAC_START_OFFSET;
+	cc_rx_writeReg(FS_CAL2, writeByte);
 
-    // 3) Calibrate and wait for calibration to be done
-    //   (radio back in IDLE state)
-    cc_tx_cmd(SCAL);
+	// 3) Calibrate and wait for calibration to be done
+	//   (radio back in IDLE state)
+	cc_rx_cmd(SCAL);
 
-    do {
-        cc_tx_readReg(MARCSTATE, &marcstate);
-    } while (marcstate != 0x41);
+	do {
+		cc_rx_readReg(MARCSTATE, &marcstate);
+	} while (marcstate != 0x41);
 
-    // 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
-    //    high VCDAC_START value
-    cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX]);
-    cc_tx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX]);
-    cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX]);
+	// 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
+	//    high VCDAC_START value
+	cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX]);
+	cc_rx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX]);
+	cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX]);
 
-    // 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
-    writeByte = 0x00;
-    cc_tx_writeReg(FS_VCO2, writeByte);
+	// 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+	writeByte = 0x00;
+	cc_rx_writeReg(FS_VCO2, writeByte);
 
-    // 6) Continue with mid VCDAC (original VCDAC_START):
-    writeByte = original_fs_cal2;
-    cc_tx_writeReg(FS_CAL2, writeByte);
+	// 6) Continue with mid VCDAC (original VCDAC_START):
+	writeByte = original_fs_cal2;
+	cc_rx_writeReg(FS_CAL2, writeByte);
 
-    // 7) Calibrate and wait for calibration to be done
-    //   (radio back in IDLE state)
-    cc_tx_cmd(SCAL);
+	// 7) Calibrate and wait for calibration to be done
+	//   (radio back in IDLE state)
+	cc_rx_cmd(SCAL);
 
-    do {
-        cc_tx_readReg(MARCSTATE, &marcstate);
-    } while (marcstate != 0x41);
+	do {
+		cc_rx_readReg(MARCSTATE, &marcstate);
+	} while (marcstate != 0x41);
 
-    // 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
-    //    with mid VCDAC_START value
-    cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX]);
-    cc_tx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX]);
-    cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX]);
+	// 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
+	//    with mid VCDAC_START value
+	cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX]);
+	cc_rx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX]);
+	cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX]);
 
-    // 9) Write back highest FS_VCO2 and corresponding FS_VCO
-    //    and FS_CHP result
-    if (calResults_for_vcdac_start_high[FS_VCO2_INDEX] >
-        calResults_for_vcdac_start_mid[FS_VCO2_INDEX]) {
-        writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX];
-        cc_tx_writeReg(FS_VCO2, writeByte);
-        writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX];
-        cc_tx_writeReg(FS_VCO4, writeByte);
-        writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX];
-        cc_tx_writeReg(FS_CHP, writeByte);
-    } else {
-        writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX];
-        cc_tx_writeReg(FS_VCO2, writeByte);
-        writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX];
-        cc_tx_writeReg(FS_VCO4, writeByte);
-        writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX];
-        cc_tx_writeReg(FS_CHP, writeByte);
-    }
+	// 9) Write back highest FS_VCO2 and corresponding FS_VCO
+	//    and FS_CHP result
+	if (calResults_for_vcdac_start_high[FS_VCO2_INDEX] >
+	calResults_for_vcdac_start_mid[FS_VCO2_INDEX]) {
+		writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX];
+		cc_rx_writeReg(FS_VCO2, writeByte);
+		writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX];
+		cc_rx_writeReg(FS_VCO4, writeByte);
+		writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX];
+		cc_rx_writeReg(FS_CHP, writeByte);
+	} else {
+		writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX];
+		cc_rx_writeReg(FS_VCO2, writeByte);
+		writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX];
+		cc_rx_writeReg(FS_VCO4, writeByte);
+		writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX];
+		cc_rx_writeReg(FS_CHP, writeByte);
+	}
 }
