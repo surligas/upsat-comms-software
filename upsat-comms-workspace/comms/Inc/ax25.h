@@ -34,6 +34,10 @@
 #define AX25_MIN_CTRL_LEN 1
 #define AX25_MAX_CTRL_LEN 2
 #define AX25_CALLSIGN_MAX_LEN 6
+
+#include "stm32f4xx_hal.h"
+extern UART_HandleTypeDef huart5;
+extern uint8_t uart_temp[100];
     
     extern const float AX25_SYNC_FLAG_MAP[8];
     extern const uint8_t AX25_SYNC_FLAG_MAP_BIN[8];
@@ -269,7 +273,113 @@
     //static inline ax25_encode_status_t ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
 //		       const size_t buffer_len);
     
-    static inline ax25_decode_status_t ax25_decode (uint8_t *out, size_t *out_len,
-		 const uint8_t *ax25_frame, size_t len);
+    static inline ax25_decode_status_t
+        ax25_decode (uint8_t *out, size_t *out_len,
+    		 const uint8_t *ax25_frame, size_t len)
+        {
+          size_t i;
+          size_t frame_start = UINT_MAX;
+          size_t frame_stop = UINT_MAX;
+          uint8_t res;
+          size_t cont_1 = 0;
+          size_t received_bytes = 0;
+          size_t bit_cnt = 0;
+          uint8_t decoded_byte = 0x0;
+          uint16_t fcs;
+          uint16_t recv_fcs;
+
+
+          /* Start searching for the SYNC flag */
+          for(i = 0; i < len - sizeof(AX25_SYNC_FLAG_MAP_BIN); i++) {
+    	res = (AX25_SYNC_FLAG_MAP_BIN[0] ^ ax25_frame[i]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[1] ^ ax25_frame[i + 1]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[2] ^ ax25_frame[i + 2]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[3] ^ ax25_frame[i + 3]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[4] ^ ax25_frame[i + 4]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[5] ^ ax25_frame[i + 5]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[6] ^ ax25_frame[i + 6]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
+    	/* Found it! */
+    	if(res == 0){
+    	  //std::cout << "Start found at " << i << std::endl;
+              sprintf((char*)uart_temp, "AX Start found at %d\n", i);
+              HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+    	  frame_start = i;
+    	  break;
+    	}
+          }
+
+          /* We failed to find the SYNC flag */
+          if(frame_start == UINT_MAX){
+    	//std::cout << "Frame start was not found" << std::endl;
+            sprintf((char*)uart_temp, "AX Frame start was not found\n");
+            HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+    	return AX25_DEC_FAIL;
+          }
+
+          for(i = frame_start + sizeof(AX25_SYNC_FLAG_MAP_BIN);
+    	  i < len - sizeof(AX25_SYNC_FLAG_MAP_BIN) + 1; i++) {
+    	/* Check if we reached the frame end */
+    	res = (AX25_SYNC_FLAG_MAP_BIN[0] ^ ax25_frame[i]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[1] ^ ax25_frame[i + 1]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[2] ^ ax25_frame[i + 2]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[3] ^ ax25_frame[i + 3]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[4] ^ ax25_frame[i + 4]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[5] ^ ax25_frame[i + 5]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[6] ^ ax25_frame[i + 6]) |
+    	    (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
+    	/* Found it! */
+    	if(res == 0){
+              sprintf((char*)uart_temp, "AX Stop found at %d\n", i);
+              HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+    	  frame_stop = i;
+    	  break;
+    	}
+
+    	if (ax25_frame[i]) {
+    	  cont_1++;
+    	  decoded_byte |= 1 << bit_cnt;
+    	  bit_cnt++;
+    	}
+    	else {
+    	  /* If 5 consecutive 1's drop the extra zero*/
+    	  if (cont_1 >= 5) {
+    	    cont_1 = 0;
+    	  }
+    	  else{
+    	    bit_cnt++;
+    	    cont_1 = 0;
+    	  }
+    	}
+
+    	/* Fill the fully constructed byte */
+    	if(bit_cnt == 8){
+    	  out[received_bytes++] = decoded_byte;
+    	  bit_cnt = 0;
+    	  decoded_byte = 0x0;
+    	}
+          }
+
+          if(frame_stop == UINT_MAX || received_bytes < AX25_MIN_ADDR_LEN){
+            sprintf((char*)uart_temp, "AX Wrong frame size\n");
+            HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+    	return AX25_DEC_FAIL;
+          }
+
+          /* Now check the CRC */
+          fcs = ax25_fcs (out, received_bytes - sizeof(uint16_t));
+          recv_fcs = (((uint16_t) out[received_bytes - 2]) << 8)
+          	    | out[received_bytes - 1];
+
+          if(fcs != recv_fcs) {
+            sprintf((char*)uart_temp, "AX Wrong FCS\n");
+            HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+    	return AX25_DEC_FAIL;
+          }
+
+          *out_len = received_bytes - sizeof(uint16_t);
+          return AX25_DEC_OK;
+
+        }
 
 #endif
