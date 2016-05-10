@@ -67,6 +67,13 @@ uint8_t payload[100] = "HELLO WORLD FROM UPSAT";
 uint8_t src_addr[100] = "ABCD";
 uint8_t dest_addr[100] = "ABCD";
 
+	uint8_t res;
+	uint8_t resRX;
+	uint8_t res2[6];
+	uint8_t res2RX[6];
+	uint8_t res_fifo[6];
+	uint8_t res_fifoRX[6];
+	uint8_t loop = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,7 +89,7 @@ static void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void ax25_test();
+void ax25_tx_test();
 void ax25_rx_test();
 
 /* USER CODE END PFP */
@@ -147,6 +154,8 @@ int main(void)
 
 	//Configure TX CC1120
 	tx_registerConfig();
+
+
 	HAL_Delay(10);
 	cc_tx_readReg(0x2f8F, &cc_id_tx);
 	sprintf((char*)uart_temp, "TX CC1120 %d configured\n", cc_id_tx);
@@ -154,6 +163,8 @@ int main(void)
 
 	//Configure RX CC1120
 	rx_registerConfig();
+
+
 	HAL_Delay(10);
 	cc_rx_readReg(0x2f8F, &cc_id_rx);
 	sprintf((char*)uart_temp, "RX CC1120 %d configured\n", cc_id_rx);
@@ -161,72 +172,20 @@ int main(void)
 
 
 	//Calibrate TX
-	manualCalibrationtx();
+	tx_manualCalibration();
+
 	cc_tx_readReg(0x2f8F, &cc_id_tx);
 	sprintf((char*)uart_temp, "TX CC1120 %d calibrated\n", cc_id_tx);
 	HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
 	//Calibrate RX
-	manualCalibrationrx();
+	rx_manualCalibration();
+
 	cc_rx_readReg(0x2f8F, &cc_id_tx);
 	sprintf((char*)uart_temp, "RX CC1120 %d calibrated\n", cc_id_tx);
 	HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
 	HAL_Delay(100);
-
-	/*
-	aTxBuffer[2] = 0x7e;
-	aTxBuffer[3] = 0x41;
-	aTxBuffer[4] = 0x21;
-	aTxBuffer[5] = 0x61;
-	aTxBuffer[6] = 0x11;
-	aTxBuffer[7] = 0x02;
-	aTxBuffer[8] = 0x02;
-	aTxBuffer[9] = 0x06;
-	aTxBuffer[10] = 0x41;
-	aTxBuffer[11] = 0x21;
-	aTxBuffer[12] = 0x61;
-	aTxBuffer[13] = 0x11;
-	aTxBuffer[14] = 0x02;
-	aTxBuffer[15] = 0x02;
-	aTxBuffer[16] = 0x86;
-	aTxBuffer[17] = 0xc0;
-	aTxBuffer[18] = 0x0f;
-	aTxBuffer[19] = 0x12;
-	aTxBuffer[20] = 0xa2;
-	aTxBuffer[21] = 0x32;
-	aTxBuffer[22] = 0x32;
-	aTxBuffer[23] = 0xf2;
-	aTxBuffer[24] = 0x04;
-	aTxBuffer[25] = 0xea;
-	aTxBuffer[26] = 0xf2;
-	aTxBuffer[27] = 0x4a;
-	aTxBuffer[28] = 0x32;
-	aTxBuffer[29] = 0x22;
-	aTxBuffer[30] = 0x04;
-	aTxBuffer[31] = 0x62;
-	aTxBuffer[32] = 0x4a;
-	aTxBuffer[33] = 0xf2;
-	aTxBuffer[34] = 0xb2;
-	aTxBuffer[35] = 0x04;
-	aTxBuffer[36] = 0xca;
-	aTxBuffer[37] = 0x0a;
-	aTxBuffer[38] = 0x82;
-	aTxBuffer[39] = 0xc2;
-	aTxBuffer[40] = 0xa2;
-	aTxBuffer[41] = 0x9b;
-	aTxBuffer[42] = 0x9a;
-	aTxBuffer[43] = 0x7e;
-	 */
-
-	//cc_TX_DATA(aTxBuffer, 42, aRxBuffer);
-	uint8_t res;
-	uint8_t resRX;
-	uint8_t res2[6];
-	uint8_t res2RX[6];
-	uint8_t res_fifo[6];
-	uint8_t res_fifoRX[6];
-	uint8_t loop = 0;
 
 
 	cc_rx_cmd(SRX);
@@ -279,7 +238,7 @@ int main(void)
 		HAL_Delay(10);
 
 
-		HAL_Delay(100);
+		HAL_Delay(500);
 
 
 		/*--------------RX------------*/
@@ -517,7 +476,7 @@ void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void ax25_test() {
+void ax25_tx_test() {
 
 
 	size_t addr_len;
