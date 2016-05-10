@@ -223,7 +223,7 @@ int main(void)
 		//uint8_t tbuf[255];
 
 		snprintf(payload, 100, "HELLO WORLD FROM STM %d\n", loop);
-		ax25_test();
+		ax25_tx_test();
 
 		cc_TX_DATA(aTxBuffer, pkt_size, aRxBuffer);
 		loop++;
@@ -250,6 +250,7 @@ int main(void)
 
 		//uint8_t tbuf[255];
 
+        aTxBuffer = {0};
 		cc_RX_DATA(aTxBuffer, &pkt_size, aRxBuffer);
 
 		res2RX[0] = cc_rx_readReg(RXFIRST, &res_fifoRX[0]);
