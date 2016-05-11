@@ -6,9 +6,9 @@
 #include <stdint.h>
 
 void tx_manualCalibration();
-void tx_manualCalibration() ;
 
-void rx_registerConfig();
+
+
 void tx_registerConfig();
 
 void cc_Tx_INIT();
