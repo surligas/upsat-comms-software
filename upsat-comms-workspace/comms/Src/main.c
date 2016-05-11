@@ -135,8 +135,6 @@ int main(void)
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);//PIN36 2CSN
 
 
-	uint8_t uart_temp[100];
-
 	HAL_Delay(100);
 
 	uint8_t cc_id_tx;
@@ -248,9 +246,7 @@ int main(void)
 		res2RX[2] = cc_rx_readReg(NUM_RXBYTES, &res_fifoRX[2]);  // number of bytes
 		res2RX[3] = cc_rx_readReg(FIFO_NUM_RXBYTES, &res_fifoRX[3]); //number of free bytes
 
-		//uint8_t tbuf[255];
 
-        aTxBuffer = {0};
 		cc_RX_DATA(aTxBuffer, &pkt_size, aRxBuffer);
 
 		res2RX[0] = cc_rx_readReg(RXFIRST, &res_fifoRX[0]);

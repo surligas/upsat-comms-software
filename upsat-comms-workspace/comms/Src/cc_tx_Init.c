@@ -190,10 +190,10 @@ void rx_registerConfig() {
 	}
 }
 
-#define VCDAC_START_OFFSET_Tx 2
-#define FS_VCO2_INDEX_Tx 0
-#define FS_VCO4_INDEX_Tx   1
-#define FS_CHP_INDEX_Tx   2
+#define VCDAC_START_OFFSET 2
+#define FS_VCO2_INDEX 0
+#define FS_VCO4_INDEX   1
+#define FS_CHP_INDEX   2
 
 void tx_manualCalibration() {
 
@@ -209,7 +209,7 @@ void tx_manualCalibration() {
 
 	// 2) Start with high VCDAC (original VCDAC_START + 2):
 	cc_tx_readReg(FS_CAL2, &original_fs_cal2);
-	writeByte = original_fs_cal2 + VCDAC_START_OFFSET_Tx;
+	writeByte = original_fs_cal2 + VCDAC_START_OFFSET;
 	cc_tx_writeReg(FS_CAL2, writeByte);
 
 	// 3) Calibrate and wait for calibration to be done
@@ -222,9 +222,9 @@ void tx_manualCalibration() {
 
 	// 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
 	//    high VCDAC_START value
-	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx]);
-	cc_tx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX_Tx]);
-	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX_Tx]);
+	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX]);
+	cc_tx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX]);
+	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX]);
 
 	// 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
 	writeByte = 0x00;
@@ -244,105 +244,101 @@ void tx_manualCalibration() {
 
 	// 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
 	//    with mid VCDAC_START value
-	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx]);
-	cc_tx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX_Tx]);
-	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX_Tx]);
-
-	// 9) Write back highest FS_VCO2 and corresponding FS_VCO
-	//    and FS_CHP result
-	if (calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx] >
-	calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx]) {
-		writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX_Tx];
-		cc_tx_writeReg(FS_VCO2, writeByte);
-		writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX_Tx];
-		cc_tx_writeReg(FS_VCO4, writeByte);
-		writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX_Tx];
-		cc_tx_writeReg(FS_CHP, writeByte);
-	} else {
-		writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX_Tx];
-		cc_tx_writeReg(FS_VCO2, writeByte);
-		writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX_Tx];
-		cc_tx_writeReg(FS_VCO4, writeByte);
-		writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX_Tx];
-		cc_tx_writeReg(FS_CHP, writeByte);
-	}
-}
-
-
-#define VCDAC_START_OFFSET 2
-#define FS_VCO2_INDEX 0
-#define FS_VCO4_INDEX 1
-#define FS_CHP_INDEX 2
-
-void rx_manualCalibration() {
-
-	uint8_t original_fs_cal2;
-	uint8_t calResults_for_vcdac_start_high[3];
-	uint8_t calResults_for_vcdac_start_mid[3];
-	uint8_t marcstate;
-	uint8_t writeByte;
-
-	// 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
-	writeByte = 0x00;
-	cc_rx_writeReg(FS_VCO2, writeByte);
-
-	// 2) Start with high VCDAC (original VCDAC_START + 2):
-	cc_rx_readReg(FS_CAL2, &original_fs_cal2);
-	writeByte = original_fs_cal2 + VCDAC_START_OFFSET;
-	cc_rx_writeReg(FS_CAL2, writeByte);
-
-	// 3) Calibrate and wait for calibration to be done
-	//   (radio back in IDLE state)
-	cc_rx_cmd(SCAL);
-
-	do {
-		cc_rx_readReg(MARCSTATE, &marcstate);
-	} while (marcstate != 0x41);
-
-	// 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
-	//    high VCDAC_START value
-	cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX]);
-	cc_rx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX]);
-	cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX]);
-
-	// 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
-	writeByte = 0x00;
-	cc_rx_writeReg(FS_VCO2, writeByte);
-
-	// 6) Continue with mid VCDAC (original VCDAC_START):
-	writeByte = original_fs_cal2;
-	cc_rx_writeReg(FS_CAL2, writeByte);
-
-	// 7) Calibrate and wait for calibration to be done
-	//   (radio back in IDLE state)
-	cc_rx_cmd(SCAL);
-
-	do {
-		cc_rx_readReg(MARCSTATE, &marcstate);
-	} while (marcstate != 0x41);
-
-	// 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
-	//    with mid VCDAC_START value
-	cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX]);
-	cc_rx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX]);
-	cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX]);
+	cc_tx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX]);
+	cc_tx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX]);
+	cc_tx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX]);
 
 	// 9) Write back highest FS_VCO2 and corresponding FS_VCO
 	//    and FS_CHP result
 	if (calResults_for_vcdac_start_high[FS_VCO2_INDEX] >
 	calResults_for_vcdac_start_mid[FS_VCO2_INDEX]) {
 		writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX];
-		cc_rx_writeReg(FS_VCO2, writeByte);
+		cc_tx_writeReg(FS_VCO2, writeByte);
 		writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX];
-		cc_rx_writeReg(FS_VCO4, writeByte);
+		cc_tx_writeReg(FS_VCO4, writeByte);
 		writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX];
-		cc_rx_writeReg(FS_CHP, writeByte);
+		cc_tx_writeReg(FS_CHP, writeByte);
 	} else {
 		writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX];
-		cc_rx_writeReg(FS_VCO2, writeByte);
+		cc_tx_writeReg(FS_VCO2, writeByte);
 		writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX];
-		cc_rx_writeReg(FS_VCO4, writeByte);
+		cc_tx_writeReg(FS_VCO4, writeByte);
 		writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX];
-		cc_rx_writeReg(FS_CHP, writeByte);
+		cc_tx_writeReg(FS_CHP, writeByte);
 	}
+}
+
+
+
+void rx_manualCalibration() {
+
+    uint8_t original_fs_cal2;
+    uint8_t calResults_for_vcdac_start_high[3];
+    uint8_t calResults_for_vcdac_start_mid[3];
+    uint8_t marcstate;
+    uint8_t writeByte;
+
+    // 1) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+    writeByte = 0x00;
+    cc_rx_writeReg(FS_VCO2, writeByte);
+
+    // 2) Start with high VCDAC (original VCDAC_START + 2):
+    cc_rx_readReg(FS_CAL2, &original_fs_cal2);
+    writeByte = original_fs_cal2 + VCDAC_START_OFFSET;
+    cc_rx_writeReg(FS_CAL2, writeByte);
+
+    // 3) Calibrate and wait for calibration to be done
+    //   (radio back in IDLE state)
+    cc_rx_cmd(SCAL);
+
+    do {
+        cc_rx_readReg(MARCSTATE, &marcstate);
+    } while (marcstate != 0x41);
+
+    // 4) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained with
+    //    high VCDAC_START value
+    cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_high[FS_VCO2_INDEX]);
+    cc_rx_readReg(FS_VCO4,&calResults_for_vcdac_start_high[FS_VCO4_INDEX]);
+    cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_high[FS_CHP_INDEX]);
+
+    // 5) Set VCO cap-array to 0 (FS_VCO2 = 0x00)
+    writeByte = 0x00;
+    cc_rx_writeReg(FS_VCO2, writeByte);
+
+    // 6) Continue with mid VCDAC (original VCDAC_START):
+    writeByte = original_fs_cal2;
+    cc_rx_writeReg(FS_CAL2, writeByte);
+
+    // 7) Calibrate and wait for calibration to be done
+    //   (radio back in IDLE state)
+    cc_rx_cmd(SCAL);
+
+    do {
+        cc_rx_readReg(MARCSTATE, &marcstate);
+    } while (marcstate != 0x41);
+
+    // 8) Read FS_VCO2, FS_VCO4 and FS_CHP register obtained
+    //    with mid VCDAC_START value
+    cc_rx_readReg(FS_VCO2, &calResults_for_vcdac_start_mid[FS_VCO2_INDEX]);
+    cc_rx_readReg(FS_VCO4, &calResults_for_vcdac_start_mid[FS_VCO4_INDEX]);
+    cc_rx_readReg(FS_CHP, &calResults_for_vcdac_start_mid[FS_CHP_INDEX]);
+
+    // 9) Write back highest FS_VCO2 and corresponding FS_VCO
+    //    and FS_CHP result
+    if (calResults_for_vcdac_start_high[FS_VCO2_INDEX] >
+        calResults_for_vcdac_start_mid[FS_VCO2_INDEX]) {
+        writeByte = calResults_for_vcdac_start_high[FS_VCO2_INDEX];
+        cc_rx_writeReg(FS_VCO2, writeByte);
+        writeByte = calResults_for_vcdac_start_high[FS_VCO4_INDEX];
+        cc_rx_writeReg(FS_VCO4, writeByte);
+        writeByte = calResults_for_vcdac_start_high[FS_CHP_INDEX];
+        cc_rx_writeReg(FS_CHP, writeByte);
+    } else {
+        writeByte = calResults_for_vcdac_start_mid[FS_VCO2_INDEX];
+        cc_rx_writeReg(FS_VCO2, writeByte);
+        writeByte = calResults_for_vcdac_start_mid[FS_VCO4_INDEX];
+        cc_rx_writeReg(FS_VCO4, writeByte);
+        writeByte = calResults_for_vcdac_start_mid[FS_CHP_INDEX];
+        cc_rx_writeReg(FS_CHP, writeByte);
+    }
 }
