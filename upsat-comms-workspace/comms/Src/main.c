@@ -188,11 +188,15 @@ int main(void)
 
 	cc_rx_cmd(SRX);
 
+
+	  /* USER CODE END 2 */
+
+	  /* Infinite loop */
+	  /* USER CODE BEGIN WHILE */
+
 	while (1)
 	{
-		/* USER CODE END WHILE */
 
-		/* USER CODE BEGIN 3 */
 
 		HAL_Delay(100);
 
@@ -261,7 +265,10 @@ int main(void)
 		HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
 		HAL_Delay(100);
+		  /****************/
+	  /* USER CODE END WHILE */
 
+	  /* USER CODE BEGIN 3 */
 
 	}
 	/* USER CODE END 3 */
