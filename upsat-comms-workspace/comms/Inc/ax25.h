@@ -26,6 +26,7 @@
 #include "utils.h"
 #include <limits.h>
 #include <stddef.h>
+#include <string.h>
 
 #define AX25_MAX_ADDR_LEN 28
 #define AX25_MAX_FRAME_LEN 256
@@ -37,7 +38,7 @@
 
 #include "stm32f4xx_hal.h"
 extern UART_HandleTypeDef huart5;
-extern uint8_t uart_temp[100];
+extern uint8_t uart_temp[];
     
     extern const float AX25_SYNC_FLAG_MAP[8];
     extern const uint8_t AX25_SYNC_FLAG_MAP_BIN[8];
