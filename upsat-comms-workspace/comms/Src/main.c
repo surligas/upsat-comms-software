@@ -38,6 +38,7 @@
 #include "cc_definitions.h"
 #include "ax25.h"
 #include "cc112x_spi.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -89,8 +90,7 @@ static void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void ax25_tx_test();
-void ax25_rx_test();
+
 
 /* USER CODE END PFP */
 
@@ -225,7 +225,6 @@ int main(void)
 		//uint8_t tbuf[255];
 
 		snprintf(payload, 100, "HELLO WORLD FROM STM %d\n", loop);
-		ax25_tx_test();
 
 		cc_TX_DATA(aTxBuffer, pkt_size, aRxBuffer);
 		loop++;
@@ -499,114 +498,6 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void ax25_tx_test() {
-
-
-	size_t addr_len;
-	size_t prepare_len;
-	size_t encode_len;
-	size_t decode_len;
-	ax25_encode_status_t encode_status;
-	ax25_decode_status_t decode_status;
-
-
-
-
-	addr_len = ax25_create_addr_field(addr_buf, dest_addr, 0, src_addr, 0);
-	if(addr_len < AX25_MIN_ADDR_LEN) {
-		//throw std::runtime_error("Wrong address");
-	}
-
-	prepare_len = ax25_prepare_frame(prepare_buf, payload,
-			strnlen(payload, 100), AX25_UI_FRAME, addr_buf,
-			addr_len, 0x03, 1);
-
-	encode_status = ax25_bit_stuffing(encode_buf, &encode_len, prepare_buf,
-			prepare_len);
-
-	//printf(" bit stuffing %d\n", encode_len);
-	//for(size_t i = 0; i < encode_len; i++){
-	//  printf(" 0x%02x\n", encode_buf[i]);
-	//}
-
-	uint8_t cnt = 2;
-	//printf(" bit stuffing in byte\n");
-	for(size_t i = 0; i < encode_len; i+=8){
-		uint8_t temp = (encode_buf[i] << 7) | (encode_buf[i+1] << 6) | (encode_buf[i+2] << 5) | (encode_buf[i+3] << 4) | (encode_buf[i+4] << 3) | (encode_buf[i+5] << 2) | (encode_buf[i+6] << 1) | (encode_buf[i+7]);
-		aTxBuffer[cnt] = temp;
-		cnt++;
-
-		//printf(" %02x", temp);
-
-	}
-
-	pkt_size = cnt;
-	//cnt = 1;
-	//printf(" bit stuffing in byte\n");
-	//for(size_t i = 0; i < encode_len; i+=8){
-	//  uint8_t temp = (encode_buf[i] << 7) | (encode_buf[i+1] << 6) | (encode_buf[i+2] << 5) | (encode_buf[i+3] << 4) | (encode_buf[i+4] << 3) | (encode_buf[i+5] << 2) | (encode_buf[i+6] << 1) | (encode_buf[i+7]);
-
-	//  printf("aTxBuffer[%d] = 0x%02x;\n",cnt, temp);
-	//  cnt++;
-	//}
-
-	//printf("len %d", cnt);
-	uint8_t AX_aRxBuffer[500*8];
-	if(encode_status != AX25_ENC_OK) {
-		//throw std::runtime_error("Encoding failed");
-		//sprintf((char*)uart_temp, "AX Encoding failed\n");
-		//HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	}
-	else{
-		//std::cout << "Successful encoding" << std::endl;
-		//sprintf((char*)uart_temp, "AX Successful encoding\n");
-		//HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	}}
-
-
-
-void ax25_rx_test() {
-
-
-	size_t addr_len;
-	size_t prepare_len;
-	size_t encode_len;
-	size_t decode_len;
-	ax25_encode_status_t encode_status;
-	ax25_decode_status_t decode_status;
-
-
-	decode_status = ax25_decode(decode_buf, &decode_len, AX_aRxBuffer, pkt_size);
-
-	if(decode_status != AX25_DEC_OK) {
-		sprintf((char*)uart_temp, "AX Decoded failed\n");
-		HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	}
-	else{
-		//std::cout << "Successful encoding" << std::endl;
-		sprintf((char*)uart_temp, "AX Successful Decoded\n");
-		HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	}
-
-	if(decode_len > 0) {
-		//printf("%c", decode_buf[i]);
-		decode_buf[decode_len] = 0;
-
-		sprintf((char*)uart_temp, "AX: %s\n", decode_buf);
-		HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	}
-	//std::cout << std::endl;
-
-	//std::cout << "Hex Format" << std::endl;
-	//for(size_t i = 0; i < decode_len; i++){
-	//  printf("0x%02x ", decode_buf[i]);
-	//}
-	//std::cout << std::endl;
-
-}
-
-
 
 
 /* USER CODE END 4 */

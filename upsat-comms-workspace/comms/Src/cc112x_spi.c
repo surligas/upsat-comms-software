@@ -1,4 +1,5 @@
 #include "cc112x_spi.h"
+#include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
