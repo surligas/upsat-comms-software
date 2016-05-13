@@ -9,8 +9,6 @@ const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 uint8_t interm_send_buf[AX25_MAX_FRAME_LEN] = {0};
 uint8_t tmp_send_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
 uint8_t tmp_recv_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
-uint8_t send_buf[AX25_MAX_FRAME_LEN] = {0};
-uint8_t recv_buf[AX25_MAX_FRAME_LEN] = {0};
 
 
 /**
