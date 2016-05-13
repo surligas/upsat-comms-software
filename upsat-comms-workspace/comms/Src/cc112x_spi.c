@@ -296,7 +296,7 @@ uint8_t cc_RX_DATA(uint8_t *data, uint8_t *size, uint8_t *rec_data) {
 
         }
         *size = cnt;
-        if(rx_size > 1) { ax25_rx_test(); }
+        //if(rx_size > 1) { ax25_rx_test(); }
         
         cc_rx_cmd(SFRX);
         sprintf((char*)uart_temp, "RX RESET\n");

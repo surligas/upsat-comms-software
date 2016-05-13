@@ -5,12 +5,19 @@
 #include "cc112x_spi.h"
 #include <stdint.h>
 
-void tx_manualCalibration();
+void
+tx_manualCalibration ();
 
+void
+tx_registerConfig ();
 
+void
+cc_Tx_INIT ();
 
-void tx_registerConfig();
+void
+rx_registerConfig ();
 
-void cc_Tx_INIT();
+void
+rx_manualCalibration ();
 
 #endif

@@ -6,6 +6,7 @@
 #include "config.h"
 #include <limits.h>
 #include <stddef.h>
+#include <string.h>
 
 #define AX25_MAX_ADDR_LEN 28
 #define AX25_MAX_FRAME_LEN 256

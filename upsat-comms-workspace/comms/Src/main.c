@@ -38,7 +38,11 @@
 #include "cc_definitions.h"
 #include "ax25.h"
 #include "cc112x_spi.h"
+#include "cc_tx_init.h"
 #include <string.h>
+#include "comms.h"
+#include "pkt_pool.h"
+#include "service_utilities.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -76,6 +80,8 @@ uint8_t dest_addr[100] = "ABCD";
 	uint8_t res_fifo[6];
 	uint8_t res_fifoRX[6];
 	uint8_t loop = 0;
+        
+uint8_t uart_temp[200];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,7 +101,7 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-uint8_t uart_temp[100];
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -188,6 +194,18 @@ int main(void)
 
 	cc_rx_cmd(SRX);
 
+        pkt_pool_INIT();
+
+        sprintf((char*)uart_temp, "Hello\n");
+        HAL_UART_Transmit(&huart5, uart_temp, 6 , 10000);
+
+        uint16_t size = 0;
+
+        event_crt_pkt_api(uart_temp, "COMMS STARTED", 666, 666, "", &size, SATR_OK);
+        HAL_uart_tx(DBG_APP_ID, (uint8_t *)uart_temp, size);
+
+        /*Uart inits*/
+        HAL_UART_Receive_IT(&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
 
   /* USER CODE END 2 */
 
@@ -196,7 +214,7 @@ int main(void)
 
 	while (1)
 	{
-
+                import_pkt(OBC_APP_ID, &comms_data.obc_uart);
 
 		HAL_Delay(100);
 
