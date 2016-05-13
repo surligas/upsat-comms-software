@@ -13,8 +13,6 @@ i# Object files
 
 upsat-comms-workspace/comms/Debug
 .cproject
-.project
 .settings/
 upsat-comms-workspace/comms/.cproject
-upsat-comms-workspace/comms/.project
 upsat-comms-workspace/comms/.settings
