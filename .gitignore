@@ -11,10 +11,7 @@ i# Object files
 # Do not track metadata
 **/.metadata/
 
-upsat-comms-workspace/comms/Debug
+Debug/
 .cproject
 .project
 .settings/
-upsat-comms-workspace/comms/.cproject
-upsat-comms-workspace/comms/.project
-upsat-comms-workspace/comms/.settings
