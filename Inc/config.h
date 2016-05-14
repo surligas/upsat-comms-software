@@ -14,4 +14,10 @@ static const uint8_t UPSAT_AX25_CTRL = 0x03;
 static const char UPSAT_DEST_CALLSIGN[] = "ABCD";
 static const uint8_t UPSAT_DEST_SSID = 0;
 
+/**
+ * Enables/disables the UART debug
+ */
+#define COMMS_UART_DBG_EN 1
+#define COMMS_UART_BUF_LEN 512
+
 #endif /* CONFIG_H_ */

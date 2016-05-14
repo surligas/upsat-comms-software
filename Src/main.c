@@ -37,6 +37,7 @@
 #include "cc_commands.h"
 #include "cc_definitions.h"
 #include "ax25.h"
+#include "log.h"
 #include "cc112x_spi.h"
 #include "cc_tx_init.h"
 #include <string.h>
@@ -142,43 +143,37 @@ int main(void)
 
   //fetch tx id
   cc_tx_readReg (0x2f8F, &cc_id_tx);
-  sprintf ((char*) uart_temp, "1st hello from TX %d\n", cc_id_tx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "1st hello from TX %d\n", cc_id_tx);
 
   //fetch rx id
   cc_rx_readReg (0x2f8F, &cc_id_rx);
-  sprintf ((char*) uart_temp, "1st hello from RX %d\n", cc_id_rx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "1st hello from RX %d\n", cc_id_rx);
 
   //Configure TX CC1120
   tx_registerConfig ();
 
   HAL_Delay (10);
   cc_tx_readReg (0x2f8F, &cc_id_tx);
-  sprintf ((char*) uart_temp, "TX CC1120 %d configured\n", cc_id_tx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "TX CC1120 %d configured\n", cc_id_tx);
 
   //Configure RX CC1120
   rx_registerConfig ();
 
   HAL_Delay (10);
   cc_rx_readReg (0x2f8F, &cc_id_rx);
-  sprintf ((char*) uart_temp, "RX CC1120 %d configured\n", cc_id_rx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "RX CC1120 %u configured\n", cc_id_rx);
 
   //Calibrate TX
   tx_manualCalibration ();
 
   cc_tx_readReg (0x2f8F, &cc_id_tx);
-  sprintf ((char*) uart_temp, "TX CC1120 %d calibrated\n", cc_id_tx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "TX CC1120 %u calibrated\n", cc_id_tx);
 
   //Calibrate RX
   rx_manualCalibration ();
 
   cc_rx_readReg (0x2f8F, &cc_id_tx);
-  sprintf ((char*) uart_temp, "RX CC1120 %d calibrated\n", cc_id_tx);
-  HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+  LOG_UART_DBG(&huart5, "RX CC1120 %u calibrated\n", cc_id_tx);
 
   HAL_Delay (100);
 
@@ -186,8 +181,7 @@ int main(void)
 
   pkt_pool_INIT ();
 
-  sprintf ((char*) uart_temp, "Hello\n");
-  HAL_UART_Transmit (&huart5, uart_temp, 6, 10000);
+  LOG_UART_DBG(&huart5, "Hello\n");
 
   uint16_t size = 0;
 
@@ -208,8 +202,7 @@ int main(void)
     HAL_Delay (100);
 
     res = cc_tx_readReg (0x2f8F, &cc_id_tx);
-    sprintf ((char*) uart_temp, "TX %x, state: %x\n", cc_id_tx, res);
-    HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
+    LOG_UART_DBG(&huart5, "TX %x, state: %x", cc_id_tx, res);
 
     HAL_Delay (100);
     //resRX = cc_rx_readReg(0x2f8F, &cc_id_rx);
@@ -225,10 +218,9 @@ int main(void)
     res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);  // number of bytes
     res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]); //number of free bytes
 
-    sprintf ((char*) uart_temp, "TX FIFO %x,%x %x,%x %x,%x %x,%x\n",
+    LOG_UART_DBG(&huart5, "TX FIFO %x,%x %x,%x %x,%x %x,%x",
 	     res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2],
 	     res_fifo[3], res2[3]);
-    HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
 
     /* Send a dummy message towards earth */
     ret = snprintf ((char *)payload, 100, "HELLO WORLD FROM STM %d\n", loop);
@@ -236,10 +228,10 @@ int main(void)
 
     if(ret > 0){
       cc_TX_DATA (tx_buf, ret, aRxBuffer);
+      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u", loop);
     }
     else{
-      ret = snprintf((char*) uart_temp, 200, "Error at AX.25 encoding");
-      HAL_UART_Transmit (&huart5, uart_temp, ret, 10000);
+      LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
     }
     loop++;
 
@@ -248,10 +240,9 @@ int main(void)
     res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
     res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
 
-    sprintf ((char*) uart_temp, "TX FIFO after %x,%x %x,%x %x,%x %x,%x\n",
+    LOG_UART_DBG(&huart5, "TX FIFO after %x,%x %x,%x %x,%x %x,%x\n",
 	     res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2],
 	     res_fifo[3], res2[3]);
-    HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
     HAL_Delay (10);
 
     HAL_Delay (500);
@@ -270,13 +261,9 @@ int main(void)
     res2RX[2] = cc_rx_readReg (NUM_RXBYTES, &res_fifoRX[2]);
     res2RX[3] = cc_rx_readReg (FIFO_NUM_RXBYTES, &res_fifoRX[3]);
 
-    sprintf ((char*) uart_temp, "RX FIFO %x,%x %x,%x %x,%x %x,%x\n",
+    LOG_UART_DBG(&huart5, "RX FIFO %x,%x %x,%x %x,%x %x,%x\n\n",
 	     res_fifoRX[0], res2RX[0], res_fifoRX[1], res2RX[1], res_fifoRX[2],
 	     res2RX[2], res_fifoRX[3], res2RX[3]);
-    HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
-
-    sprintf (uart_temp, "\n");
-    HAL_UART_Transmit (&huart5, uart_temp, strlen (uart_temp), 10000);
 
     HAL_Delay (100);
     /****************/
