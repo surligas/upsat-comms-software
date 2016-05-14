@@ -15,6 +15,13 @@
 #define AX25_MIN_CTRL_LEN 1
 #define AX25_MAX_CTRL_LEN 2
 #define AX25_CALLSIGN_MAX_LEN 6
+/**
+ * Due to the AX25 encapsulation the maximum payload is restricted by
+ * the AX.25 headers, the leading and trailing SYNC flag and bit stuffing
+ * the actual payload is reduced to 210. This covers the worst case scenario
+ * where all the payload bytes need bit stuffing.
+ */
+#define COMMS_MAX_PAYLOAD_LEN 210
 
 /**
  * AX.25 Frame types

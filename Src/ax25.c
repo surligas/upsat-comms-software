@@ -340,6 +340,10 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
   size_t decode_len;
   ax25_decode_status_t status;
 
+  if(len > AX25_MAX_FRAME_LEN) {
+    return -1;
+  }
+
   /* Apply one bit per byte for easy decoding */
   for (i = 0; i < len; i++) {
     tmp_recv_buf[8*i] = (in[i] >> 7) & 0x1;

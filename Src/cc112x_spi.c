@@ -97,52 +97,56 @@ uint8_t cc_tx_cmd(uint8_t CMDStrobe) {
 }
 
 
-uint8_t cc_TX_DATA(uint8_t *data, uint8_t size, uint8_t *rec_data) {
+uint8_t
+cc_TX_DATA (uint8_t *data, uint8_t size, uint8_t *rec_data)
+{
 
-	//Set tx packet len
-	//cc_tx_writeReg(PKT_LEN, size-1);
+  //Set tx packet len
+  //cc_tx_writeReg(PKT_LEN, size-1);
 
-	data[0] = 0x7F;
-	data[1] = size;
-	size++;
-	size++;
+  data[0] = 0x7F;
+  data[1] = size;
+  size += 2;
 
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)data, (uint8_t *)rec_data, size, 5000); //send and receive 3 bytes
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+  //chip select LOw
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
 
-	uint8_t res2[6];
-	uint8_t res_fifo[6];
+  HAL_SPI_TransmitReceive (&hspi1, (uint8_t*) data, (uint8_t *) rec_data, size,
+			   5000);
+  //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-	res2[0] = cc_tx_readReg(TXFIRST, &res_fifo[0]);
-	res2[1] = cc_tx_readReg(TXLAST, &res_fifo[1]);
-	res2[2] = cc_tx_readReg(NUM_TXBYTES, &res_fifo[2]);
-	res2[3] = cc_tx_readReg(FIFO_NUM_TXBYTES, &res_fifo[3]);
+  uint8_t res2[6];
+  uint8_t res_fifo[6];
 
-	// sprintf((char*)uart_temp, "2: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
-	// HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]);
+  res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);
+  res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
+  res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
 
-	cc_tx_cmd(STX);   	   //transmit command
+  // sprintf((char*)uart_temp, "2: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
+  // HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
-	res2[0] = cc_tx_readReg(TXFIRST, &res_fifo[0]);
-	res2[1] = cc_tx_readReg(TXLAST, &res_fifo[1]);
-	res2[2] = cc_tx_readReg(NUM_TXBYTES, &res_fifo[2]);
-	res2[3] = cc_tx_readReg(FIFO_NUM_TXBYTES, &res_fifo[3]);
+  cc_tx_cmd (STX);   	   //transmit command
 
-	//sprintf((char*)uart_temp, "3: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
-	//HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]);
+  res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);
+  res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
+  res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
 
-	HAL_Delay(100);
+  //sprintf((char*)uart_temp, "3: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
+  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
 
-	//cc_tx_cmd(SRES);
+  HAL_Delay (100);
 
-	//cc_tx_cmd(SFTX);	   //flash Tx fifo. SFTX when in IDLE
+  //cc_tx_cmd(SRES);
 
-	HAL_Delay(50);
-	return rec_data[0];
+  //cc_tx_cmd(SFTX);	   //flash Tx fifo. SFTX when in IDLE
+
+  HAL_Delay (50);
+  return rec_data[0];
 }
 
 
