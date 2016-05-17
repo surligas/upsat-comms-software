@@ -1,4 +1,7 @@
 #include "cc112x_spi.h"
+#include "cc1120_config.h"
+#include "utils.h"
+#include "log.h"
 #include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
@@ -6,6 +9,10 @@ extern SPI_HandleTypeDef hspi2;
 extern UART_HandleTypeDef huart5;
 extern uint8_t uart_temp[100];
 extern uint8_t AX_aRxBuffer[];
+volatile extern uint8_t tx_thr_flag;
+volatile extern uint8_t tx_fin_flag;
+
+static uint8_t tx_frag_buf[2 + CC1120_TX_FIFO_SIZE];
 
 uint8_t cc_tx_readReg(uint16_t add, uint8_t *data) {
 
@@ -81,73 +88,128 @@ uint8_t cc_tx_writeReg(uint16_t add, uint8_t data) {
 
 uint8_t cc_tx_cmd(uint8_t CMDStrobe) {
 
-	uint8_t aTxBuffer[1];
-	uint8_t aRxBuffer[1];
+	uint8_t tx_buf;
+	uint8_t rx_buf;
 
-	aTxBuffer[0]= CMDStrobe;
+	tx_buf = CMDStrobe;
 
-	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET);  	//chip select LOw
+	/* chip select LOw */
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)aTxBuffer, (uint8_t *)aRxBuffer, 1, 5000); //send and receive 1 bytes
-	//HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
+	/* Send-receive 1 byte */
+	HAL_SPI_TransmitReceive(&hspi1, &tx_buf, &rx_buf, sizeof(uint8_t), 5000);
+
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-	HAL_Delay(50);
-	return aRxBuffer[0];   //if need be please change this part to return the whole buffer
+
+	/*
+	 * TODO: Return the whole RX buffer
+	 */
+	return rx_buf;
 }
 
-
-uint8_t
-cc_TX_DATA (uint8_t *data, uint8_t size, uint8_t *rec_data)
+/**
+ * Send a buffer containing user data into the RF chain.
+ * NOTE: No additional headers or space for headers should be appended.
+ * his function performs automatically all the necessary padding and
+ * header insertions.
+ *
+ * @param data the buffer containing the data
+ * @param size the size of the data
+ * @param rec_data receive data buffer for storing the feedback from the SPI
+ * @return the number of bytes sent. In case of error -1 is returned
+ */
+int32_t
+cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
 {
-
-  //Set tx packet len
-  //cc_tx_writeReg(PKT_LEN, size-1);
-
-  data[0] = 0x7F;
-  data[1] = size;
-  size += 2;
-
-  //chip select LOw
-  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-  HAL_Delay (1);
-
-  HAL_SPI_TransmitReceive (&hspi1, (uint8_t*) data, (uint8_t *) rec_data, size,
-			   5000);
-  //HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
-
+  size_t i;
+  uint8_t ret;
+  uint8_t gone = 0;
+  uint8_t in_fifo = 0;
+  uint8_t issue_len;
   uint8_t res2[6];
   uint8_t res_fifo[6];
+  uint8_t first_burst = 1;
 
-  res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]);
-  res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);
-  res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
-  res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
+  /* Reset the packet transmitted flag */
+  tx_fin_flag = 0;
 
-  // sprintf((char*)uart_temp, "2: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
-  // HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+  /*
+   * The routine should continue operate until either all bytes have been
+   * sent or are already placed in the FIFO and waiting to be sent.
+   */
+  size++;
+  while( gone + in_fifo < size) {
+    tx_thr_flag = 0;
 
-  cc_tx_cmd (STX);   	   //transmit command
+    /*
+     * Only the first FIFO burst needs the frame length info.
+     * However all the consecutive burst need the BURST TX FIFO flag in front
+     */
+    if(first_burst) {
+      issue_len = min(CC1120_TX_FIFO_SIZE - 1, size);
+      tx_frag_buf[0] = CC1120_BURST_TXFIFO;
+      tx_frag_buf[1] = size;
+      first_burst = 0;
+      memcpy(tx_frag_buf + 2, data, issue_len);
 
-  res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]);
-  res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);
-  res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
-  res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
+      HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+      HAL_SPI_TransmitReceive (&hspi1, tx_frag_buf, rec_data,
+  			     issue_len + 2, 1);
+      HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-  //sprintf((char*)uart_temp, "3: FIFO %x,%x %x,%x %x,%x %x,%x\n", res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2], res_fifo[3], res2[3]);
-  //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
+      ret = cc_tx_cmd (STX);
+      /* Take into consideration the extra length byte */
+      issue_len++;
+    }
+    else{
+      issue_len = min(CC1120_TX_FIFO_SIZE - in_fifo, size - gone - in_fifo);
+      tx_frag_buf[0] = CC1120_BURST_TXFIFO;
+      memcpy(tx_frag_buf + 1, data + gone + in_fifo - 1, issue_len);
+      HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+      HAL_SPI_TransmitReceive (&hspi1, tx_frag_buf, rec_data, issue_len + 1,
+			       1);
+      HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+    }
 
-  HAL_Delay (100);
+    /* Track the number of bytes in the TX FIFO*/
+    in_fifo += issue_len;
 
-  //cc_tx_cmd(SRES);
+    /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
+    if (in_fifo > CC1120_TXFIFO_THR && size != issue_len) {
+      for(i = 0; i < 0xFFFFFF; i++) {
+	if (tx_thr_flag) {
+	  break;
+	}
+      }
 
-  //cc_tx_cmd(SFTX);	   //flash Tx fifo. SFTX when in IDLE
+      /* Timeout occurred. Abort */
+      if(!tx_thr_flag){
+	LOG_UART_ERROR(&huart5, "Timeout while trying to send data.");
+	cc_tx_readReg(MODEM_STATUS0, res_fifo);
+	ret = cc_tx_cmd (SFTX);
+        return -1;
+      }
 
-  HAL_Delay (50);
-  return rec_data[0];
+      gone += CC1120_TXFIFO_THR;
+      in_fifo -= CC1120_TXFIFO_THR;
+    }
+    else {
+      gone += issue_len;
+      in_fifo -= issue_len;
+    }
+  }
+
+  /* Wait the FIFO to empty */
+  for (i = 0; i < 0xFFFFFF; i++) {
+    if (tx_fin_flag) {
+      break;
+    }
+  }
+
+  cc_tx_readReg(MODEM_STATUS0, res_fifo);
+  ret = cc_tx_cmd (SFTX);
+  return gone + in_fifo - 1;
 }
+
 
 
 

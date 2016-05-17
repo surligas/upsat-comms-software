@@ -32,12 +32,18 @@ tx_data(uint8_t *dev_tx_buffer, uint8_t *dev_rx_buffer,
   }
 
   /* Issue the frame at the CC1120 */
-  cc_TX_DATA (dev_tx_buffer, ret, dev_rx_buffer);
+  cc_tx_data (dev_tx_buffer, ret, dev_rx_buffer);
   return len;
 }
 
 size_t
 tx_large_data(const uint8_t *in, size_t len)
+{
+
+}
+
+void
+tx_fifo_thr_irq_handler ()
 {
 
 }

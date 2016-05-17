@@ -1,35 +1,35 @@
 /**
- ******************************************************************************
- * File Name          : main.c
- * Description        : Main program body
- ******************************************************************************
- *
- * COPYRIGHT(c) 2016 STMicroelectronics
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *   1. Redistributions of source code must retain the above copyright notice,
- *      this list of conditions and the following disclaimer.
- *   2. Redistributions in binary form must reproduce the above copyright notice,
- *      this list of conditions and the following disclaimer in the documentation
- *      and/or other materials provided with the distribution.
- *   3. Neither the name of STMicroelectronics nor the names of its contributors
- *      may be used to endorse or promote products derived from this software
- *      without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************
- */
+  ******************************************************************************
+  * File Name          : main.c
+  * Description        : Main program body
+  ******************************************************************************
+  *
+  * COPYRIGHT(c) 2016 STMicroelectronics
+  *
+  * Redistribution and use in source and binary forms, with or without modification,
+  * are permitted provided that the following conditions are met:
+  *   1. Redistributions of source code must retain the above copyright notice,
+  *      this list of conditions and the following disclaimer.
+  *   2. Redistributions in binary form must reproduce the above copyright notice,
+  *      this list of conditions and the following disclaimer in the documentation
+  *      and/or other materials provided with the distribution.
+  *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  *      may be used to endorse or promote products derived from this software
+  *      without specific prior written permission.
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  *
+  ******************************************************************************
+  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 
@@ -44,6 +44,7 @@
 #include "comms.h"
 #include "pkt_pool.h"
 #include "service_utilities.h"
+#include "tx_manager.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -67,7 +68,7 @@ uint8_t pkt_size;
 
 uint8_t tx_buf[2 * AX25_MAX_FRAME_LEN];
 
-uint8_t payload[100] = "HELLO WORLD FROM UPSAT";
+uint8_t payload[AX25_MAX_FRAME_LEN] = "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT";
 
 uint8_t res;
 uint8_t resRX;
@@ -76,27 +77,21 @@ uint8_t res2RX[6];
 uint8_t res_fifo[6];
 uint8_t res_fifoRX[6];
 uint8_t loop = 0;
+volatile uint8_t tx_thr_flag = 0;
+volatile uint8_t tx_fin_flag = 0;
 
 uint8_t uart_temp[200];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-void
-SystemClock_Config (void);
-static void
-MX_GPIO_Init (void);
-static void
-MX_DMA_Init (void);
-static void
-MX_I2C1_Init (void);
-static void
-MX_SPI1_Init (void);
-static void
-MX_SPI2_Init (void);
-static void
-MX_UART5_Init (void);
-static void
-MX_USART3_UART_Init (void);
+void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
+static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
+static void MX_SPI2_Init(void);
+static void MX_UART5_Init(void);
+static void MX_USART3_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -107,8 +102,7 @@ MX_USART3_UART_Init (void);
 
 /* USER CODE END 0 */
 
-int
-main (void)
+int main(void)
 {
 
   /* USER CODE BEGIN 1 */
@@ -118,19 +112,19 @@ main (void)
   /* MCU Configuration----------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init ();
+  HAL_Init();
 
   /* Configure the system clock */
-  SystemClock_Config ();
+  SystemClock_Config();
 
   /* Initialize all configured peripherals */
-  MX_GPIO_Init ();
-  MX_DMA_Init ();
-  MX_I2C1_Init ();
-  MX_SPI1_Init ();
-  MX_SPI2_Init ();
-  MX_UART5_Init ();
-  MX_USART3_UART_Init ();
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_I2C1_Init();
+  MX_SPI1_Init();
+  MX_SPI2_Init();
+  MX_UART5_Init();
+  MX_USART3_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -226,17 +220,20 @@ main (void)
     res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);  // number of bytes
     res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]); //number of free bytes
 
-    LOG_UART_DBG(&huart5, "TX FIFO %x,%x %x,%x %x,%x %x,%x", res_fifo[0],
-		 res2[0], res_fifo[1], res2[1], res_fifo[2], res2[2],
-		 res_fifo[3], res2[3]);
-
     /* Send a dummy message towards earth */
-    ret = snprintf ((char *) payload, 100, "HELLO WORLD FROM STM %d\n", loop);
-    ret = ax25_send (tx_buf + 2, payload, ret);
+    ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
+		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
+		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
+		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
+		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 loop %d\n", loop);
+    ret = ax25_send (tx_buf, payload, ret);
 
     if (ret > 0) {
-      cc_TX_DATA (tx_buf, ret, aRxBuffer);
-      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u", loop);
+      LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
+      HAL_Delay (50);
+      ret = cc_tx_data (tx_buf, ret, aRxBuffer);
+      HAL_Delay (50);
+      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
     else {
       LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
@@ -275,9 +272,9 @@ main (void)
 
     HAL_Delay (100);
     /****************/
-    /* USER CODE END WHILE */
+  /* USER CODE END WHILE */
 
-    /* USER CODE BEGIN 3 */
+  /* USER CODE BEGIN 3 */
 
   }
   /* USER CODE END 3 */
@@ -285,16 +282,14 @@ main (void)
 }
 
 /** System Clock Configuration
- */
-void
-SystemClock_Config (void)
+*/
+void SystemClock_Config(void)
 {
 
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
-  __HAL_RCC_PWR_CLK_ENABLE()
-  ;
+  __HAL_RCC_PWR_CLK_ENABLE();
 
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
@@ -306,27 +301,26 @@ SystemClock_Config (void)
   RCC_OscInitStruct.PLL.PLLN = 192;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
-  HAL_RCC_OscConfig (&RCC_OscInitStruct);
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
-      | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
-  HAL_RCC_ClockConfig (&RCC_ClkInitStruct, FLASH_LATENCY_0);
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0);
 
-  HAL_SYSTICK_Config (HAL_RCC_GetHCLKFreq () / 1000);
+  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-  HAL_SYSTICK_CLKSourceConfig (SYSTICK_CLKSOURCE_HCLK);
+  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
   /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority (SysTick_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /* I2C1 init function */
-void
-MX_I2C1_Init (void)
+void MX_I2C1_Init(void)
 {
 
   hi2c1.Instance = I2C1;
@@ -338,13 +332,12 @@ MX_I2C1_Init (void)
   hi2c1.Init.OwnAddress2 = 0;
   hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
   hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  HAL_I2C_Init (&hi2c1);
+  HAL_I2C_Init(&hi2c1);
 
 }
 
 /* SPI1 init function */
-void
-MX_SPI1_Init (void)
+void MX_SPI1_Init(void)
 {
 
   hspi1.Instance = SPI1;
@@ -354,18 +347,17 @@ MX_SPI1_Init (void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi1.Init.CRCPolynomial = 10;
-  HAL_SPI_Init (&hspi1);
+  HAL_SPI_Init(&hspi1);
 
 }
 
 /* SPI2 init function */
-void
-MX_SPI2_Init (void)
+void MX_SPI2_Init(void)
 {
 
   hspi2.Instance = SPI2;
@@ -375,35 +367,33 @@ MX_SPI2_Init (void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi2.Init.CRCPolynomial = 10;
-  HAL_SPI_Init (&hspi2);
+  HAL_SPI_Init(&hspi2);
 
 }
 
 /* UART5 init function */
-void
-MX_UART5_Init (void)
+void MX_UART5_Init(void)
 {
 
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 9600;
+  huart5.Init.BaudRate = 115200;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
   huart5.Init.Mode = UART_MODE_TX_RX;
   huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart5.Init.OverSampling = UART_OVERSAMPLING_16;
-  HAL_UART_Init (&huart5);
+  HAL_UART_Init(&huart5);
 
 }
 
 /* USART3 init function */
-void
-MX_USART3_UART_Init (void)
+void MX_USART3_UART_Init(void)
 {
 
   huart3.Instance = USART3;
@@ -414,110 +404,100 @@ MX_USART3_UART_Init (void)
   huart3.Init.Mode = UART_MODE_TX_RX;
   huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
   huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  HAL_UART_Init (&huart3);
+  HAL_UART_Init(&huart3);
 
 }
 
 /** 
- * Enable DMA controller clock
- */
-void
-MX_DMA_Init (void)
+  * Enable DMA controller clock
+  */
+void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE()
-  ;
-  __HAL_RCC_DMA2_CLK_ENABLE()
-  ;
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority (DMA1_Stream3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (DMA1_Stream3_IRQn);
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
   /* DMA1_Stream7_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority (DMA1_Stream7_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (DMA1_Stream7_IRQn);
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
   /* DMA2_Stream3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority (DMA2_Stream3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (DMA2_Stream3_IRQn);
+  HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
 }
 
 /** Configure pins as 
- * Analog
- * Input
- * Output
- * EVENT_OUT
- * EXTI
- */
-void
-MX_GPIO_Init (void)
+        * Analog 
+        * Input 
+        * Output
+        * EVENT_OUT
+        * EXTI
+*/
+void MX_GPIO_Init(void)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct;
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOH_CLK_ENABLE()
-  ;
-  __HAL_RCC_GPIOA_CLK_ENABLE()
-  ;
-  __HAL_RCC_GPIOB_CLK_ENABLE()
-  ;
-  __HAL_RCC_GPIOE_CLK_ENABLE()
-  ;
-  __HAL_RCC_GPIOC_CLK_ENABLE()
-  ;
-  __HAL_RCC_GPIOD_CLK_ENABLE()
-  ;
+  __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pins : PA2 PA3 PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init (GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA_CNTRL_Pin RESETN_TX_Pin CS_SPI1_TX_Pin */
-  GPIO_InitStruct.Pin = PA_CNTRL_Pin | RESETN_TX_Pin | CS_SPI1_TX_Pin;
+  GPIO_InitStruct.Pin = PA_CNTRL_Pin|RESETN_TX_Pin|CS_SPI1_TX_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init (GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RESETN_RX_Pin */
   GPIO_InitStruct.Pin = RESETN_RX_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init (RESETN_RX_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(RESETN_RX_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CS_SPI2_RX_Pin */
   GPIO_InitStruct.Pin = CS_SPI2_RX_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init (CS_SPI2_RX_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(CS_SPI2_RX_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin (PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin (RESETN_RX_GPIO_Port, RESETN_RX_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RESETN_RX_GPIO_Port, RESETN_RX_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin (CS_SPI2_RX_GPIO_Port, CS_SPI2_RX_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(CS_SPI2_RX_GPIO_Port, CS_SPI2_RX_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin (GPIOA, RESETN_TX_Pin | CS_SPI1_TX_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, RESETN_TX_Pin|CS_SPI1_TX_Pin, GPIO_PIN_SET);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority (EXTI2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (EXTI2_IRQn);
+  HAL_NVIC_SetPriority(EXTI2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI2_IRQn);
 
-  HAL_NVIC_SetPriority (EXTI3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (EXTI3_IRQn);
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
-  HAL_NVIC_SetPriority (EXTI9_5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ (EXTI9_5_IRQn);
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
@@ -525,19 +505,26 @@ MX_GPIO_Init (void)
 void
 HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
-  LOG_UART_DBG(&huart5, "EXT IRQ %u", GPIO_Pin);
+  switch(GPIO_Pin){
+    case GPIO_PIN_3:
+      tx_fin_flag = 1;
+      break;
+    case GPIO_PIN_2:
+      tx_thr_flag = 1;
+      break;
+  }
 }
 /* USER CODE END 4 */
 
 #ifdef USE_FULL_ASSERT
 
 /**
- * @brief Reports the name of the source file and the source line number
- * where the assert_param error has occurred.
- * @param file: pointer to the source file name
- * @param line: assert_param error line source number
- * @retval None
- */
+   * @brief Reports the name of the source file and the source line number
+   * where the assert_param error has occurred.
+   * @param file: pointer to the source file name
+   * @param line: assert_param error line source number
+   * @retval None
+   */
 void assert_failed(uint8_t* file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
@@ -550,11 +537,11 @@ void assert_failed(uint8_t* file, uint32_t line)
 #endif
 
 /**
- * @}
- */
+  * @}
+  */ 
 
 /**
- * @}
- */
+  * @}
+*/ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

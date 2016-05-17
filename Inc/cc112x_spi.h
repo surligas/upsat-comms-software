@@ -10,7 +10,7 @@
 
 uint8_t cc_tx_readReg(uint16_t add, uint8_t *data);
 uint8_t cc_tx_writeReg(uint16_t add, uint8_t data);
-uint8_t cc_TX_DATA(uint8_t *data, uint8_t size, uint8_t *rec_data);
+int32_t cc_tx_data(uint8_t *data, uint8_t size, uint8_t *rec_data);
 uint8_t cc_tx_cmd(uint8_t CMDStrobe);
 
 
