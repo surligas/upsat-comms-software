@@ -18,15 +18,15 @@ static char _log_uart_buffer[COMMS_UART_BUF_LEN];
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 						\
 			"[DEBUG] %s:%d: " M "\n",									\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
-	HAL_UART_Transmit (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer), 10000);				\
+	HAL_UART_Transmit_IT (huart, _log_uart_buffer,							\
+					   strlen (_log_uart_buffer));				\
 
 #define LOG_UART_ERROR(huart, M, ...) 									\
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 						\
 			"[ERROR] %s:%d: " M "\n",									\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
-	HAL_UART_Transmit (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer), 10000);				\
+	HAL_UART_Transmit_IT (huart, _log_uart_buffer,							\
+					   strlen (_log_uart_buffer));				\
 
 #else
 #define LOG_UART_DBG(huart, M, ...)

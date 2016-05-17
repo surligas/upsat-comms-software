@@ -19,6 +19,7 @@
 // Rf settings for CC1120
 //
 #include <cc_tx_init.h>
+#include "cc1120_config.h"
 
 typedef struct
 {
@@ -29,7 +30,7 @@ typedef struct
 
 static const registerSetting_t TX_preferredSettings[]=
 {
-		{IOCFG3,             0xB0},
+		{IOCFG3,             0x02},
 		{IOCFG2,             0x06},
 		{IOCFG1,             0xB0},
 		{IOCFG0,             0x40},
@@ -48,7 +49,7 @@ static const registerSetting_t TX_preferredSettings[]=
 		{AGC_REF,            0x20},
 		{AGC_CS_THR,         0x19},
 		{AGC_CFG1,           0xA9},
-		{FIFO_CFG,           0x78},
+		{FIFO_CFG,           CC1120_TXFIFO_THR},
 		{SETTLING_CFG,       0x03},
 		{FS_CFG,             0x14},
 		//{PKT_CFG0,           0x28},
@@ -62,7 +63,7 @@ static const registerSetting_t TX_preferredSettings[]=
 		{FREQOFF_CFG,        0x22},
 		{FREQ2,              0x6C},
 		{FREQ1,              0xF3},
-		{FREQ0,              0x54},
+		{FREQ0,              0x95},
 		{FS_DIG1,            0x00},
 		{FS_DIG0,            0x5F},
 		{FS_CAL1,            0x40},
