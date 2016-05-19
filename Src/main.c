@@ -99,7 +99,30 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+SAT_returnState tx_test(tc_tm_pkt *pkt) {
 
+    int ret = 0;
+    
+    uint16_t size = 0;
+    SAT_returnState res;    
+
+    pack_pkt(payload, pkt, &size);
+
+    //if(!C_ASSERT(size > 0) == true) { return SATR_ERROR; }
+
+    ret = ax25_send (tx_buf, payload, size);
+
+    if (ret > 0) {
+      LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
+      HAL_Delay (50);
+      ret = cc_tx_data (tx_buf, ret, aRxBuffer);
+      HAL_Delay (50);
+      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
+    }
+    else {
+      LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
+    }
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -248,9 +271,9 @@ int main(void)
     LOG_UART_DBG(&huart5, "TX FIFO after %x,%x %x,%x %x,%x %x,%x\n",
 		 res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2],
 		 res2[2], res_fifo[3], res2[3]);
-    HAL_Delay (10);
+    HAL_Delay (100);
 
-    HAL_Delay (500);
+//    HAL_Delay (500);
 
     /*--------------RX------------*/
 
@@ -381,7 +404,7 @@ void MX_UART5_Init(void)
 {
 
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
+  huart5.Init.BaudRate = 9600;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
