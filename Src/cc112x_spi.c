@@ -2,6 +2,7 @@
 #include "cc1120_config.h"
 #include "utils.h"
 #include "log.h"
+#include "status.h"
 #include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
@@ -11,99 +12,97 @@ extern uint8_t uart_temp[100];
 extern uint8_t AX_aRxBuffer[];
 volatile extern uint8_t tx_thr_flag;
 volatile extern uint8_t tx_fin_flag;
+volatile extern uint8_t rx_sync_flag;
 
 static uint8_t tx_frag_buf[2 + CC1120_TX_FIFO_SIZE];
 
-uint8_t cc_tx_readReg(uint16_t add, uint8_t *data) {
+uint8_t
+cc_tx_readReg (uint16_t add, uint8_t *data)
+{
 
-	uint8_t temp_TxBuffer[4];
-	uint8_t temp_RxBuffer[4] = {0, 0, 0, 0};
-	uint8_t len = 0;
+  uint8_t temp_TxBuffer[4];
+  uint8_t temp_RxBuffer[4] = { 0, 0, 0, 0 };
+  uint8_t len = 0;
 
-	if(add >= CC_EXT_ADD) {
-		len = 3;
+  if (add >= CC_EXT_ADD) {
+    len = 3;
 
-		temp_TxBuffer[0] = 0xAF;
-		temp_TxBuffer[1] = (uint8_t)(0x00FF & add);	 //extended address
-		temp_TxBuffer[2] = 0;                      //send dummy so that i can read data
-	} else {
-		len = 2;
+    temp_TxBuffer[0] = 0xAF;
+    temp_TxBuffer[1] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[2] = 0;
+  }
+  else {
+    len = 2;
+    /* bit masked for read function */
+    add |= 0x0080;
+    temp_TxBuffer[0] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[1] = 0;
+  }
 
-		add |= 0x0080; //bit masked for read function
-		temp_TxBuffer[0] = (uint8_t)(0x00FF & add);    		//		extended address
-		temp_TxBuffer[1] = 0;         //      send dummy so that i can read data
-	}
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
+  HAL_SPI_TransmitReceive (&hspi1, (uint8_t *) temp_TxBuffer,
+			   (uint8_t *) temp_RxBuffer, len, 5000);
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
+  HAL_Delay (50);
+  *data = temp_RxBuffer[len - 1];
 
-
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);//PIN36 2CSN
-	HAL_Delay(1);
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)temp_TxBuffer, (uint8_t *)temp_RxBuffer, len, 5000); //send and receive 3 bytes
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);//PIN36 2CSN
-
-	HAL_Delay(50);
-	*data = temp_RxBuffer[len - 1];
-
-	//uint8_t uart_temp[100];
-	//sprintf((char*)uart_temp, "read Reg %d, %d\n", temp_RxBuffer[0], *data);
-	//HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-
-	return temp_RxBuffer[0];  //if need be please change this part to return the whole buffer
+  return temp_RxBuffer[0];
 }
 
-uint8_t cc_tx_writeReg(uint16_t add, uint8_t data) {
+uint8_t
+cc_tx_writeReg (uint16_t add, uint8_t data)
+{
 
-	uint8_t aTxBuffer[4];
-	uint8_t aRxBuffer[4] = {0, 0, 0, 0};
-	uint8_t len = 0;
+  uint8_t aTxBuffer[4];
+  uint8_t aRxBuffer[4] =
+    { 0, 0, 0, 0 };
+  uint8_t len = 0;
 
-	if(add >= CC_EXT_ADD) {
-		len = 3;
+  if (add >= CC_EXT_ADD) {
+    len = 3;
 
-		aTxBuffer[0] = 0x2F;
-		aTxBuffer[1] = (uint8_t)(0x00FF & add);	 //extended address
-		aTxBuffer[2] = data;                      //send dummy so that i can read data
-	} else {
-		len = 2;
+    aTxBuffer[0] = 0x2F;
+    aTxBuffer[1] = (uint8_t) (0x00FF & add);
+    aTxBuffer[2] = data;
+  }
+  else {
+    len = 2;
 
-		aTxBuffer[0] = (uint8_t)(0x00FF & add);    		//		extended address
-		aTxBuffer[1] = data;         //      send dummy so that i can read data
-	}
+    aTxBuffer[0] = (uint8_t) (0x00FF & add);
+    aTxBuffer[1] = data;
+  }
 
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_RESET); 	//chip select LOw
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-	HAL_Delay(1);
-	HAL_SPI_TransmitReceive(&hspi1, (uint8_t *)aTxBuffer, (uint8_t *)aRxBuffer, len, 5000); //send and receive 3 bytes
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_15,GPIO_PIN_SET);
-	//HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
+  HAL_SPI_TransmitReceive (&hspi1, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
+			   len, 5000); //send and receive 3 bytes
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-	// uint8_t uart_temp[100];
-	// sprintf((char*)uart_temp, "write Reg %x\n", aRxBuffer[0]);
-	// HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-	//HAL_Delay(50);
-	return aRxBuffer[0];  //if need be please change this part to return the whole buffer
+  return aRxBuffer[0];
 }
 
-uint8_t cc_tx_cmd(uint8_t CMDStrobe) {
+uint8_t
+cc_tx_cmd (uint8_t CMDStrobe)
+{
 
-	uint8_t tx_buf;
-	uint8_t rx_buf;
+  uint8_t tx_buf;
+  uint8_t rx_buf;
 
-	tx_buf = CMDStrobe;
+  tx_buf = CMDStrobe;
 
-	/* chip select LOw */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-	/* Send-receive 1 byte */
-	HAL_SPI_TransmitReceive(&hspi1, &tx_buf, &rx_buf, sizeof(uint8_t), 5000);
+  /* chip select LOw */
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+  /* Send-receive 1 byte */
+  HAL_SPI_TransmitReceive (&hspi1, &tx_buf, &rx_buf, sizeof(uint8_t), 5000);
 
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
-	/*
-	 * TODO: Return the whole RX buffer
-	 */
-	return rx_buf;
+  /*
+   * TODO: Return the whole RX buffer
+   */
+  return rx_buf;
 }
 
 /**
@@ -118,7 +117,8 @@ uint8_t cc_tx_cmd(uint8_t CMDStrobe) {
  * @return the number of bytes sent. In case of error -1 is returned
  */
 int32_t
-cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
+cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
+	    size_t timeout_ms)
 {
   size_t i;
   uint8_t ret;
@@ -128,6 +128,7 @@ cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
   uint8_t res2[6];
   uint8_t res_fifo[6];
   uint8_t first_burst = 1;
+  uint32_t start_tick;
 
   /* Reset the packet transmitted flag */
   tx_fin_flag = 0;
@@ -175,7 +176,8 @@ cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
 
     /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
     if (in_fifo > CC1120_TXFIFO_THR && size != issue_len) {
-      for(i = 0; i < 0xFFFFFF; i++) {
+      start_tick = HAL_GetTick();
+      while(HAL_GetTick() - start_tick < timeout_ms) {
 	if (tx_thr_flag) {
 	  break;
 	}
@@ -199,7 +201,8 @@ cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
   }
 
   /* Wait the FIFO to empty */
-  for (i = 0; i < 0xFFFFFF; i++) {
+  start_tick = HAL_GetTick();
+  while(HAL_GetTick() - start_tick < timeout_ms) {
     if (tx_fin_flag) {
       break;
     }
@@ -213,78 +216,112 @@ cc_tx_data (uint8_t *data, uint8_t size, uint8_t *rec_data)
 
 
 
-uint8_t cc_rx_readReg(uint16_t add, uint8_t *data) {
+uint8_t
+cc_rx_readReg (uint16_t add, uint8_t *data)
+{
 
-    uint8_t temp_TxBuffer[4];
-    uint8_t temp_RxBuffer[4] = {0, 0, 0, 0};
-    uint8_t len = 0;
+  uint8_t temp_TxBuffer[4];
+  uint8_t temp_RxBuffer[4] =
+    { 0, 0, 0, 0 };
+  uint8_t len = 0;
 
-    if(add >= CC_EXT_ADD) {
-        len = 3;
+  if (add >= CC_EXT_ADD) {
+    len = 3;
 
-        temp_TxBuffer[0] = 0xAF;
-        temp_TxBuffer[1] = (uint8_t)(0x00FF & add);	 //extended address
-        temp_TxBuffer[2] = 0;                      //send dummy so that i can read data
-    } else {
-        len = 2;
+    temp_TxBuffer[0] = 0xAF;
+    /* extended address */
+    temp_TxBuffer[1] = (uint8_t) (0x00FF & add);
+    /* send dummy so that i can read data */
+    temp_TxBuffer[2] = 0;
+  }
+  else {
+    len = 2;
+    /*bit masked for read function*/
+    add |= 0x0080;
+    /* extended address */
+    temp_TxBuffer[0] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[1] = 0;
+  }
 
-        add |= 0x0080; /*bit masked for read function*/
-        temp_TxBuffer[0] = (uint8_t)(0x00FF & add);    		//		extended address
-        temp_TxBuffer[1] = 0;         //      send dummy so that i can read data
-    }
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
+  HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) temp_TxBuffer,
+			   (uint8_t *) temp_RxBuffer, len, 5000);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
-    
+  HAL_Delay (50);
+  *data = temp_RxBuffer[len - 1];
 
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET); 	//chip select LOw
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_RESET);
-    HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi2, (uint8_t *)temp_TxBuffer, (uint8_t *)temp_RxBuffer, len, 5000); //send and receive 3 bytes
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_SET);
-    
-    HAL_Delay(50);
-    *data = temp_RxBuffer[len - 1];
-
-    //uint8_t uart_temp[100];
-    //sprintf((char*)uart_temp, "read Reg %d, %d\n", temp_RxBuffer[0], *data);
-    //HAL_UART_Transmit(&huart2, uart_temp, strlen(uart_temp), 10000);
-
-    return temp_RxBuffer[0];  //if need be please change this part to return the whole buffer
+  return temp_RxBuffer[0];
 }
 
-uint8_t cc_rx_writeReg(uint16_t add, uint8_t data) {
+uint8_t
+cc_rx_writeReg (uint16_t add, uint8_t data)
+{
 
-    uint8_t aTxBuffer[4];
-    uint8_t aRxBuffer[4] = {0, 0, 0, 0};
-    uint8_t len = 0;
+  uint8_t aTxBuffer[4];
+  uint8_t aRxBuffer[4] = { 0, 0, 0, 0 };
+  uint8_t len = 0;
 
-    if(add >= CC_EXT_ADD) {
-        len = 3;
+  if (add >= CC_EXT_ADD) {
+    len = 3;
 
-        aTxBuffer[0] = 0x2F;
-        aTxBuffer[1] = (uint8_t)(0x00FF & add);	 //extended address
-        aTxBuffer[2] = data;                      //send dummy so that i can read data
-    } else {
-        len = 2;
+    aTxBuffer[0] = 0x2F;
+    /* extended address */
+    aTxBuffer[1] = (uint8_t) (0x00FF & add);
+    /* send dummy so that i can read data */
+    aTxBuffer[2] = data;
+  }
+  else {
+    len = 2;
+    /* extended address */
+    aTxBuffer[0] = (uint8_t) (0x00FF & add);
+    /* send dummy so that i can read data */
+    aTxBuffer[1] = data;
+  }
 
-        aTxBuffer[0] = (uint8_t)(0x00FF & add);    		//		extended address
-        aTxBuffer[1] = data;         //      send dummy so that i can read data
-    }
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
+  HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
+			   len, 5000);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET); 	//chip select LOw
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_RESET);
-    HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi2, (uint8_t *)aTxBuffer, (uint8_t *)aRxBuffer, len, 5000); //send and receive 3 bytes
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_SET);
-    
-    // uint8_t uart_temp[100];
-    //sprintf((char*)uart_temp, "write Reg %x\n", aRxBuffer[0]);
-    //HAL_UART_Transmit(&huart2, uart_temp, strlen(uart_temp), 10000);
-    //HAL_Delay(50);
-    return aRxBuffer[0];  //if need be please change this part to return the whole buffer
+  return aRxBuffer[0];
 }
 
+
+int32_t
+cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
+{
+  size_t frame_len;
+  size_t i;
+  uint32_t start_tick;
+  uint8_t timeout = 1;
+
+  /* Start the reception by issuing the start-RX command */
+  cc_rx_cmd(SRX);
+  start_tick = HAL_GetTick();
+
+  /* Now wait for the SYNC word to be received */
+  while(HAL_GetTick() - start_tick < timeout_ms) {
+    if(rx_sync_flag) {
+      timeout = 0;
+      break;
+    }
+  }
+
+  /* Timeout occured, just return*/
+  if(timeout){
+    return STATUS_TIMEOUT;
+  }
+
+
+  return len;
+}
+
+/*
+ * FIXME: Why global?
+ */
 uint8_t rx_size;
 
 uint8_t cc_RX_DATA(uint8_t *data, uint8_t *size, uint8_t *rec_data) {
@@ -427,21 +464,21 @@ uint8_t cc_RX_DATA(uint8_t *data, uint8_t *size, uint8_t *rec_data) {
     return rec_data[0];
 }
 
-uint8_t cc_rx_cmd(uint8_t CMDStrobe) {
+uint8_t
+cc_rx_cmd (uint8_t CMDStrobe)
+{
 
-    uint8_t aTxBuffer[1];
-    uint8_t aRxBuffer[1];
+  uint8_t aTxBuffer[1];
+  uint8_t aRxBuffer[1];
 
-    aTxBuffer[0]= CMDStrobe;
+  aTxBuffer[0] = CMDStrobe;
 
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_RESET);  	//chip select LOw
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_RESET);
-    HAL_Delay(1);
-    HAL_SPI_TransmitReceive(&hspi2, (uint8_t*)aTxBuffer, (uint8_t *)aRxBuffer, 1, 5000); //send and receive 1 bytes
-    //HAL_GPIO_WritePin(GPIOB,GPIO_PIN_12,GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,GPIO_PIN_SET);
-    
-    HAL_Delay(50);
-    return aRxBuffer[0];   //if need be please change this part to return the whole buffer
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_Delay (1);
+  HAL_SPI_TransmitReceive (&hspi2, (uint8_t*) aTxBuffer, (uint8_t *) aRxBuffer,
+			   1, 5000);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+
+  return aRxBuffer[0];
 }
 

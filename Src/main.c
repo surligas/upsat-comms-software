@@ -231,7 +231,7 @@ int main(void)
     if (ret > 0) {
       LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
       HAL_Delay (50);
-      ret = cc_tx_data (tx_buf, ret, aRxBuffer);
+      ret = cc_tx_data (tx_buf, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
@@ -455,6 +455,18 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+//  /*Configure GPIO pins : PE7, PE9 */
+//  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_9;
+//  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+//
+//  /*Configure GPIO pins : PB12 */
+//  GPIO_InitStruct.Pin = GPIO_PIN_12;
+//  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA_CNTRL_Pin RESETN_TX_Pin CS_SPI1_TX_Pin */
   GPIO_InitStruct.Pin = PA_CNTRL_Pin|RESETN_TX_Pin|CS_SPI1_TX_Pin;
