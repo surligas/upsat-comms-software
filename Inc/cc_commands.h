@@ -2,10 +2,10 @@
 #define __CC_COMMANDS_H
 
 /* DATA FIFO Access */
-#define SINGLE_TXFIFO            0x3F      /*  TXFIFO  - Single accecss to Transmit FIFO */
-#define BURST_TXFIFO             0x7F      /*  TXFIFO  - Burst accecss to Transmit FIFO  */
-#define SINGLE_RXFIFO            0xBF      /*  RXFIFO  - Single accecss to Receive FIFO  */
-#define BURST_RXFIFO             0xFF      /*  RXFIFO  - Busrrst ccecss to Receive FIFO  */
+#define SINGLE_TXFIFO            0x3F      /*  TXFIFO  - Single access to Transmit FIFO */
+#define BURST_TXFIFO             0x7F      /*  TXFIFO  - Burst access to Transmit FIFO  */
+#define SINGLE_RXFIFO            0xBF      /*  RXFIFO  - Single access to Receive FIFO  */
+#define BURST_RXFIFO             0xFF      /*  RXFIFO  - Burst access to Receive FIFO  */
 
 #define LQI_CRC_OK_BM            0x80
 #define LQI_EST_BM               0x7F

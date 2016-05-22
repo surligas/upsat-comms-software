@@ -7,17 +7,7 @@
 
 void
 tx_manualCalibration ();
-
 void
 tx_registerConfig ();
-
-void
-cc_Tx_INIT ();
-
-void
-rx_registerConfig ();
-
-void
-rx_manualCalibration ();
 
 #endif

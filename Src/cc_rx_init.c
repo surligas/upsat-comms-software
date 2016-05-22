@@ -33,10 +33,10 @@ typedef struct
 
 static const registerSetting_t RX_preferredSettings[]=
 {
-  {IOCFG3,            0x00},
-  {IOCFG2,            0x06},
+  {IOCFG3,            0x00}, /* RXFIFO_THR, on rising edge*/
+  {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on failing edge*/
   {IOCFG1,            0xB0},
-  {IOCFG0,            0x40},
+  {IOCFG0,            0x06}, /* PKT_SYNC_RXTX, on rising edge*/
   {SYNC1,             0x7A},
   {SYNC0,             0x0E},
   {SYNC_CFG1,         0x0B},
@@ -52,10 +52,9 @@ static const registerSetting_t RX_preferredSettings[]=
   {AGC_CS_THR,        0x19},
   {AGC_CFG1,          0xA9},
   {AGC_CFG0,          0xCF},
-  //{FIFO_CFG,          0x00},
-  {FIFO_CFG,          CC1120_TXFIFO_THR},
+  {FIFO_CFG,          CC1120_RXFIFO_THR},
   {FS_CFG,            0x1B},
-  {PKT_CFG1,          0x01},
+  {PKT_CFG1,          0x00},
   {PKT_CFG0,          0x20},
   {PA_CFG2,           0x5D},
   {PA_CFG0,           0x7D},
