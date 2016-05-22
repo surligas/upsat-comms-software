@@ -361,5 +361,5 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
   if( status != AX25_DEC_OK){
     return -1;
   }
-  return (ssize_t) decode_len;
+  return (size_t) decode_len;
 }
