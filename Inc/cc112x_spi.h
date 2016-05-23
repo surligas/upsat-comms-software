@@ -13,6 +13,8 @@ uint8_t
 cc_tx_readReg (uint16_t add, uint8_t *data);
 uint8_t
 cc_tx_writeReg (uint16_t add, uint8_t data);
+HAL_StatusTypeDef
+cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len);
 int32_t
 cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 	    size_t timeout_ms);

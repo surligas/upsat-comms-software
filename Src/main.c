@@ -246,7 +246,7 @@ int main(void)
     else{
       LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
       HAL_Delay (50);
-      //LOG_UART_DBG(&huart5, "RX Msg OK %s", aRxBuffer);
+      LOG_UART_DBG(&huart5, "RX Msg OK %s", aRxBuffer);
     }
 
     HAL_Delay (100);
