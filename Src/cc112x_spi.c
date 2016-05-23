@@ -157,8 +157,9 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
   uint8_t gone = 0;
   uint8_t in_fifo = 0;
   uint8_t issue_len;
-  uint8_t res_fifo[6];
+  uint8_t processed;
   uint8_t first_burst = 1;
+  uint8_t frame_size;
   uint32_t start_tick;
 
   /* Reset the packet transmitted flag */
@@ -168,8 +169,8 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
    * The routine should continue operate until either all bytes have been
    * sent or are already placed in the FIFO and waiting to be sent.
    */
-  size++;
-  while( gone + in_fifo < size) {
+  frame_size = size + 1;
+  while( gone + in_fifo < frame_size) {
     tx_thr_flag = 0;
 
     /*
@@ -189,17 +190,17 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
       issue_len++;
     }
     else{
-      issue_len = min(CC1120_TX_FIFO_SIZE - in_fifo, size - gone - in_fifo);
+      issue_len = min(CC1120_TXFIFO_IRQ_THR, frame_size - gone - in_fifo);
       tx_frag_buf[0] = BURST_TXFIFO;
       memcpy(tx_frag_buf + 1, data + gone + in_fifo - 1, issue_len);
-      cc_tx_spi_write_fifo(tx_frag_buf, rec_data, issue_len);
+      cc_tx_spi_write_fifo(tx_frag_buf, rec_data, issue_len + 1);
     }
 
     /* Track the number of bytes in the TX FIFO*/
     in_fifo += issue_len;
 
     /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
-    if (in_fifo > CC1120_TXFIFO_THR && size != issue_len) {
+    if (in_fifo >= CC1120_TXFIFO_IRQ_THR && frame_size != issue_len) {
       start_tick = HAL_GetTick();
       while(HAL_GetTick() - start_tick < timeout_ms) {
 	if (tx_thr_flag) {
@@ -209,14 +210,13 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 
       /* Timeout occurred. Abort */
       if(!tx_thr_flag){
-	LOG_UART_ERROR(&huart5, "Timeout while trying to send data.");
-	cc_tx_readReg(MODEM_STATUS0, res_fifo);
 	ret = cc_tx_cmd (SFTX);
-        return -1;
+        return STATUS_TIMEOUT;
       }
 
-      gone += CC1120_TXFIFO_THR;
-      in_fifo -= CC1120_TXFIFO_THR;
+      processed = in_fifo - CC1120_TXFIFO_IRQ_THR + 1;
+      gone += processed;
+      in_fifo -= processed;
     }
     else {
       gone += issue_len;
@@ -232,7 +232,6 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
     }
   }
 
-  cc_tx_readReg(MODEM_STATUS0, res_fifo);
   ret = cc_tx_cmd (SFTX);
   return gone + in_fifo - 1;
 }
@@ -304,7 +303,7 @@ cc_rx_writeReg (uint16_t add, uint8_t data)
   }
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-  HAL_Delay (1);
+  delay_us(20);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
 			   len, 5000);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
@@ -322,7 +321,6 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   uint32_t start_tick;
   uint8_t timeout = 1;
   uint8_t rx_n_bytes;
-  uint8_t tmp[2];
 
   /*Reset all the RX-related flags */
   rx_sync_flag = 0;
