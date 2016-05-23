@@ -243,18 +243,15 @@ int main(void)
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 loop %d\n", loop);
-    ret = ax25_send (tx_buf, payload, ret);
-
+		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
+    ret =  tx_data(payload, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
+    HAL_Delay (50);
     if (ret > 0) {
-      LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
-      HAL_Delay (50);
-      ret = cc_tx_data (tx_buf, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
     else {
-      LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
+      LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
     }
     loop++;
 
