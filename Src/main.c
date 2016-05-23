@@ -40,6 +40,7 @@
 #include "log.h"
 #include "cc112x_spi.h"
 #include "cc_tx_init.h"
+#include "cc_rx_init.h"
 #include <string.h>
 #include "comms.h"
 #include "pkt_pool.h"
@@ -79,6 +80,9 @@ uint8_t res_fifoRX[6];
 uint8_t loop = 0;
 volatile uint8_t tx_thr_flag = 0;
 volatile uint8_t tx_fin_flag = 0;
+volatile uint8_t rx_sync_flag = 0;
+volatile uint8_t rx_finished_flag = 0;
+volatile uint8_t rx_thr_flag = 0;
 
 uint8_t uart_temp[200];
 /* USER CODE END PV */
@@ -115,7 +119,7 @@ SAT_returnState tx_test(tc_tm_pkt *pkt) {
     if (ret > 0) {
       LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
       HAL_Delay (50);
-      ret = cc_tx_data (tx_buf, ret, aRxBuffer);
+      ret = cc_tx_data (tx_buf, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
@@ -157,7 +161,6 @@ int main(void)
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET); //csn1
 
   /* RX Pins RESETN_RX, CSN2 */
-
   HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET); //PIN36 2RESETN
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET); //PIN36 2CSN
 
@@ -202,11 +205,8 @@ int main(void)
 
   HAL_Delay (100);
 
-  cc_rx_cmd (SRX);
 
   pkt_pool_INIT ();
-
-  LOG_UART_DBG(&huart5, "Hello\n");
 
   uint16_t size = 0;
 
@@ -229,11 +229,6 @@ int main(void)
     res = cc_tx_readReg (0x2f8F, &cc_id_tx);
     LOG_UART_DBG(&huart5, "TX %x, state: %x", cc_id_tx, res);
 
-    HAL_Delay (100);
-    //resRX = cc_rx_readReg(0x2f8F, &cc_id_rx);
-    //sprintf((char*)uart_temp, "RX %x, state: %x\n", cc_id_rx, resRX);
-    //HAL_UART_Transmit(&huart5, uart_temp, strlen(uart_temp), 10000);
-
     HAL_Delay (300);
 
     /*--------------TX------------*/
@@ -254,7 +249,7 @@ int main(void)
     if (ret > 0) {
       LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
       HAL_Delay (50);
-      ret = cc_tx_data (tx_buf, ret, aRxBuffer);
+      ret = cc_tx_data (tx_buf, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
@@ -263,38 +258,21 @@ int main(void)
     }
     loop++;
 
-    res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]);
-    res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);
-    res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);
-    res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]);
 
-    LOG_UART_DBG(&huart5, "TX FIFO after %x,%x %x,%x %x,%x %x,%x\n",
-		 res_fifo[0], res2[0], res_fifo[1], res2[1], res_fifo[2],
-		 res2[2], res_fifo[3], res2[3]);
-    HAL_Delay (100);
-
-//    HAL_Delay (500);
 
     /*--------------RX------------*/
 
-    res2RX[0] = cc_rx_readReg (RXFIRST, &res_fifoRX[0]); // pointer at first
-    res2RX[1] = cc_rx_readReg (RXLAST, &res_fifoRX[1]);  // pointer at last
-    res2RX[2] = cc_rx_readReg (NUM_RXBYTES, &res_fifoRX[2]);  // number of bytes
-    res2RX[3] = cc_rx_readReg (FIFO_NUM_RXBYTES, &res_fifoRX[3]); //number of free bytes
-
-    cc_RX_DATA (aTxBuffer, &pkt_size, aRxBuffer);
-
-    res2RX[0] = cc_rx_readReg (RXFIRST, &res_fifoRX[0]);
-    res2RX[1] = cc_rx_readReg (RXLAST, &res_fifoRX[1]);
-    res2RX[2] = cc_rx_readReg (NUM_RXBYTES, &res_fifoRX[2]);
-    res2RX[3] = cc_rx_readReg (FIFO_NUM_RXBYTES, &res_fifoRX[3]);
-
-    LOG_UART_DBG(&huart5, "RX FIFO %x,%x %x,%x %x,%x %x,%x\n\n", res_fifoRX[0],
-		 res2RX[0], res_fifoRX[1], res2RX[1], res_fifoRX[2], res2RX[2],
-		 res_fifoRX[3], res2RX[3]);
+    ret = cc_rx_data(aRxBuffer, 255, 4000);
+    if(ret < 0){
+      LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
+    }
+    else{
+      LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
+      HAL_Delay (50);
+      LOG_UART_DBG(&huart5, "RX Msg OK %s", aRxBuffer);
+    }
 
     HAL_Delay (100);
-    /****************/
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -404,7 +382,7 @@ void MX_UART5_Init(void)
 {
 
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 9600;
+  huart5.Init.BaudRate = 115200;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
@@ -437,8 +415,8 @@ void MX_USART3_UART_Init(void)
 void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream3_IRQn interrupt configuration */
@@ -473,8 +451,8 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
-  /*Configure GPIO pins : PA2 PA3 PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_8;
+  /*Configure GPIO pins : PA2 PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2|GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -493,12 +471,36 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RESETN_RX_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : CC_GPIO3_RXFIFO_ABOVE_THR_Pin */
+  GPIO_InitStruct.Pin = CC_GPIO3_RXFIFO_ABOVE_THR_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(CC_GPIO3_RXFIFO_ABOVE_THR_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CC_GPIO2_END_OF_PACKET_Pin */
+  GPIO_InitStruct.Pin = CC_GPIO2_END_OF_PACKET_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(CC_GPIO2_END_OF_PACKET_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : CS_SPI2_RX_Pin */
   GPIO_InitStruct.Pin = CS_SPI2_RX_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(CS_SPI2_RX_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : CC_GPIO0_SYNC_RECEIVED_Pin */
+  GPIO_InitStruct.Pin = CC_GPIO0_SYNC_RECEIVED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(CC_GPIO0_SYNC_RECEIVED_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA8 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_RESET);
@@ -522,6 +524,9 @@ void MX_GPIO_Init(void)
   HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
 }
 
 /* USER CODE BEGIN 4 */
@@ -534,6 +539,15 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       break;
     case GPIO_PIN_2:
       tx_thr_flag = 1;
+      break;
+    case CC_GPIO0_SYNC_RECEIVED_Pin:
+      rx_sync_flag = 1;
+      break;
+    case CC_GPIO2_END_OF_PACKET_Pin:
+      rx_finished_flag = 1;
+      break;
+    case CC_GPIO3_RXFIFO_ABOVE_THR_Pin:
+      rx_thr_flag = 1;
       break;
   }
 }

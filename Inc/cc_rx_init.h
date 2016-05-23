@@ -12,12 +12,10 @@
 #include "cc112x_spi.h"
 #include <stdint.h>
 
-void rx_manualCalibration();
-
-
-void rx_registerConfig();
-
-
+void
+rx_manualCalibration ();
+void
+rx_registerConfig ();
 
 #endif /* INC_CC_RX_INIT_H_ */
 

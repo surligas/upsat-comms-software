@@ -32,7 +32,7 @@ tx_data(uint8_t *dev_tx_buffer, uint8_t *dev_rx_buffer,
   }
 
   /* Issue the frame at the CC1120 */
-  cc_tx_data (dev_tx_buffer, ret, dev_rx_buffer);
+  cc_tx_data (dev_tx_buffer, ret, dev_rx_buffer, COMMS_DEFAULT_TIMEOUT_MS);
   return len;
 }
 

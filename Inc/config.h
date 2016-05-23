@@ -22,4 +22,9 @@ static const uint8_t UPSAT_DEST_SSID = 0;
 #define COMMS_UART_DBG_EN 1
 #define COMMS_UART_BUF_LEN 512
 
+/**
+ * The default time out period is 4 seconds
+ */
+#define COMMS_DEFAULT_TIMEOUT_MS 4000
+
 #endif /* CONFIG_H_ */
