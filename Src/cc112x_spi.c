@@ -343,6 +343,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   /* Timeout occurred, just return */
   if(timeout){
     cc_rx_cmd(SFRX);
+    cc_rx_cmd(SIDLE);
     return STATUS_TIMEOUT;
   }
 
@@ -355,7 +356,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   } while (rx_n_bytes < 1);
 
   /* One byte FIFO access */
-  cc_rx_readReg(BURST_RXFIFO, &frame_len);
+  cc_rx_readReg(SINGLE_RXFIFO, &frame_len);
 
   /*
    * Now that we have the frame length check if the FIFO should be dequeued
@@ -365,21 +366,27 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
     /* Wait for the RX FIFO above threshold interrupt */
     start_tick = HAL_GetTick ();
     timeout = 1;
+    /*Reset the flag */
+    rx_thr_flag = 0;
     while (HAL_GetTick () - start_tick < timeout_ms) {
       if (rx_thr_flag) {
 	timeout = 0;
 	break;
       }
     }
+
     if (timeout) {
       cc_rx_cmd (SFRX);
+      cc_rx_cmd(SIDLE);
       return STATUS_TIMEOUT;
     }
 
     /* We can now dequeue CC1120_BYTES_IN_RX_FIF0 bytes */
     ret = cc_rx_spi_read_fifo(out + received, CC1120_BYTES_IN_RX_FIF0);
+
     if(ret) {
       cc_rx_cmd(SFRX);
+      cc_rx_cmd(SIDLE);
       return STATUS_NO_DATA;
     }
     received += CC1120_BYTES_IN_RX_FIF0;
@@ -396,18 +403,25 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   }
   if(timeout){
     cc_rx_cmd(SFRX);
+    cc_rx_cmd(SIDLE);
     return STATUS_TIMEOUT;
   }
 
   /* Now dequeue the remaining bytes in the FIFO if any left*/
-  if (frame_len - received) {
+  if (frame_len - received > 1) {
     ret = cc_rx_spi_read_fifo (out + received, frame_len - received);
     if (ret) {
       cc_rx_cmd (SFRX);
+      cc_rx_cmd(SIDLE);
       return STATUS_NO_DATA;
     }
   }
+  else if(frame_len - received == 1) {
+    /* One byte FIFO access */
+    cc_rx_readReg(SINGLE_RXFIFO, out + received);
+  }
   cc_rx_cmd(SFRX);
+  cc_rx_cmd(SIDLE);
   return frame_len;
 }
 
@@ -426,7 +440,8 @@ cc_rx_spi_read_fifo(uint8_t *out, size_t len)
   memset(rx_spi_tx_buf, 0, CC1120_RX_FIFO_SIZE);
   rx_spi_tx_buf[0] = BURST_RXFIFO;
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_RESET);
-  ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, out, len,
+  delay_us(20);
+  ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, out, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_SET);
   return ret;

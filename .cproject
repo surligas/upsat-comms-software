@@ -87,7 +87,7 @@
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.1402458675" name="large_data_service.h" rcbsApplicability="disable" resourcePath="services/large_data_service.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.316465716" name="mass_storage_service.h" rcbsApplicability="disable" resourcePath="services/mass_storage_service.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="services/mass_storage_service.h|services/mass_storage_service.c|services/large_data_service.h|services/large_data_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="services/mass_storage_service.h|services/mass_storage_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -108,8 +108,8 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration artifactName="upsat-comms-software" configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="upsat-comms-software"/>
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/upsat-comms-software"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
