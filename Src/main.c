@@ -64,7 +64,7 @@ DMA_HandleTypeDef hdma_uart5_tx;
 /* Private variables ---------------------------------------------------------*/
 uint8_t aTxBuffer[500];
 uint8_t AX_aRxBuffer[500 * 8];
-uint8_t aRxBuffer[500];
+uint8_t aRxBuffer[500] = {0};
 uint8_t pkt_size;
 
 uint8_t tx_buf[2 * AX25_MAX_FRAME_LEN];
@@ -233,11 +233,6 @@ int main(void)
 
     /*--------------TX------------*/
 
-    res2[0] = cc_tx_readReg (TXFIRST, &res_fifo[0]); // pointer at first
-    res2[1] = cc_tx_readReg (TXLAST, &res_fifo[1]);  // pointer at last
-    res2[2] = cc_tx_readReg (NUM_TXBYTES, &res_fifo[2]);  // number of bytes
-    res2[3] = cc_tx_readReg (FIFO_NUM_TXBYTES, &res_fifo[3]); //number of free bytes
-
     /* Send a dummy message towards earth */
     ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
@@ -259,6 +254,7 @@ int main(void)
 
     /*--------------RX------------*/
 
+    memset(aRxBuffer, 0, 255);
     ret = cc_rx_data(aRxBuffer, 255, 4000);
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
