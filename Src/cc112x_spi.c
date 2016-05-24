@@ -33,7 +33,7 @@ delay_us(uint32_t us) {
 }
 
 uint8_t
-cc_tx_readReg (uint16_t add, uint8_t *data)
+cc_tx_rd_reg (uint16_t add, uint8_t *data)
 {
 
   uint8_t temp_TxBuffer[4];
@@ -66,7 +66,7 @@ cc_tx_readReg (uint16_t add, uint8_t *data)
 }
 
 uint8_t
-cc_tx_writeReg (uint16_t add, uint8_t data)
+cc_tx_wr_reg (uint16_t add, uint8_t data)
 {
 
   uint8_t aTxBuffer[4];
@@ -240,7 +240,7 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 
 
 uint8_t
-cc_rx_readReg (uint16_t add, uint8_t *data)
+cc_rx_rd_reg (uint16_t add, uint8_t *data)
 {
 
   uint8_t temp_TxBuffer[4];
@@ -278,7 +278,7 @@ cc_rx_readReg (uint16_t add, uint8_t *data)
 }
 
 uint8_t
-cc_rx_writeReg (uint16_t add, uint8_t data)
+cc_rx_wr_reg (uint16_t add, uint8_t data)
 {
 
   uint8_t aTxBuffer[4];
@@ -311,7 +311,15 @@ cc_rx_writeReg (uint16_t add, uint8_t data)
   return aRxBuffer[0];
 }
 
-
+/**
+ * Get a frame from the air. This method blocks for \p timeout_ms milliseconds
+ * until a valid frame is received.
+ * @param out the output buffer
+ * @param len the size of the output buffer
+ * @param timeout_ms the timeout period in milliseconds
+ * @return the size of the frame in bytes or a negative number indicating
+ * the appropriate error
+ */
 int32_t
 cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
 {
@@ -352,11 +360,11 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
    * after the SYNC word
    */
   do {
-      cc_rx_readReg(NUM_RXBYTES, &rx_n_bytes);
+      cc_rx_rd_reg(NUM_RXBYTES, &rx_n_bytes);
   } while (rx_n_bytes < 1);
 
   /* One byte FIFO access */
-  cc_rx_readReg(SINGLE_RXFIFO, &frame_len);
+  cc_rx_rd_reg(SINGLE_RXFIFO, &frame_len);
 
   /*
    * Now that we have the frame length check if the FIFO should be dequeued
@@ -418,7 +426,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   }
   else if(frame_len - received == 1) {
     /* One byte FIFO access */
-    cc_rx_readReg(SINGLE_RXFIFO, out + received);
+    cc_rx_rd_reg(SINGLE_RXFIFO, out + received);
   }
   cc_rx_cmd(SFRX);
   cc_rx_cmd(SIDLE);

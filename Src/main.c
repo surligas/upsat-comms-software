@@ -46,6 +46,7 @@
 #include "pkt_pool.h"
 #include "service_utilities.h"
 #include "tx_manager.h"
+#include "rx_manager.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,9 +64,8 @@ DMA_HandleTypeDef hdma_uart5_tx;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t aTxBuffer[500];
-uint8_t AX_aRxBuffer[500 * 8];
 uint8_t aRxBuffer[500] = {0};
-uint8_t pkt_size;
+uint8_t spi_buffer[500] = {0};
 
 uint8_t tx_buf[2 * AX25_MAX_FRAME_LEN];
 
@@ -170,37 +170,37 @@ int main(void)
   uint8_t cc_id_rx;
 
   //fetch tx id
-  cc_tx_readReg (0x2f8F, &cc_id_tx);
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
   LOG_UART_DBG(&huart5, "1st hello from TX %d\n", cc_id_tx);
 
   //fetch rx id
-  cc_rx_readReg (0x2f8F, &cc_id_rx);
+  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
   LOG_UART_DBG(&huart5, "1st hello from RX %d\n", cc_id_rx);
 
   //Configure TX CC1120
   tx_registerConfig ();
 
   HAL_Delay (10);
-  cc_tx_readReg (0x2f8F, &cc_id_tx);
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
   LOG_UART_DBG(&huart5, "TX CC1120 %d configured\n", cc_id_tx);
 
   //Configure RX CC1120
   rx_registerConfig ();
 
   HAL_Delay (10);
-  cc_rx_readReg (0x2f8F, &cc_id_rx);
+  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
   LOG_UART_DBG(&huart5, "RX CC1120 %u configured\n", cc_id_rx);
 
   //Calibrate TX
   tx_manualCalibration ();
 
-  cc_tx_readReg (0x2f8F, &cc_id_tx);
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
   LOG_UART_DBG(&huart5, "TX CC1120 %u calibrated\n", cc_id_tx);
 
   //Calibrate RX
   rx_manualCalibration ();
 
-  cc_rx_readReg (0x2f8F, &cc_id_tx);
+  cc_rx_rd_reg (0x2f8F, &cc_id_tx);
   LOG_UART_DBG(&huart5, "RX CC1120 %u calibrated\n", cc_id_tx);
 
   HAL_Delay (100);
@@ -226,7 +226,7 @@ int main(void)
 
     HAL_Delay (100);
 
-    res = cc_tx_readReg (0x2f8F, &cc_id_tx);
+    res = cc_tx_rd_reg (0x2f8F, &cc_id_tx);
     LOG_UART_DBG(&huart5, "TX %x, state: %x", cc_id_tx, res);
 
     HAL_Delay (300);
@@ -255,14 +255,14 @@ int main(void)
     /*--------------RX------------*/
 
     memset(aRxBuffer, 0, 255);
-    ret = cc_rx_data(aRxBuffer, 255, 4000);
+    ret = rx_data(aRxBuffer, 255, spi_buffer, COMMS_DEFAULT_TIMEOUT_MS);
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }
     else{
       LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
       HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "RX Msg OK %s", aRxBuffer);
+      LOG_UART_DBG(&huart5, "RX Msg OK: %s", aRxBuffer);
     }
 
     HAL_Delay (100);
