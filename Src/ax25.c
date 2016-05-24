@@ -221,7 +221,6 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
 	| (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
     /* Found it! */
     if (res == 0) {
-      LOG_UART_DBG(&huart5, "AX Start found at %d", i);
       frame_start = i;
       break;
     }
@@ -229,8 +228,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
 
   /* We failed to find the SYNC flag */
   if (frame_start == UINT_MAX) {
-    LOG_UART_DBG(&huart5, "AX Frame start was not found\n");
-    return AX25_DEC_FAIL;
+    return AX25_DEC_START_SYNC_NOT_FOUND;
   }
 
   for (i = frame_start + sizeof(AX25_SYNC_FLAG_MAP_BIN);
@@ -246,7 +244,6 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
 	| (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
     /* Found it! */
     if (res == 0) {
-      LOG_UART_DBG(&huart5, "AX Stop found at %d\n", i);
       frame_stop = i;
       break;
     }
@@ -276,8 +273,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
   }
 
   if (frame_stop == UINT_MAX || received_bytes < AX25_MIN_ADDR_LEN) {
-    LOG_UART_DBG(&huart5, "AX Wrong frame size");
-    return AX25_DEC_FAIL;
+    return AX25_DEC_STOP_SYNC_NOT_FOUND;
   }
 
   /* Now check the CRC */
@@ -286,8 +282,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
       | out[received_bytes - 1];
 
   if (fcs != recv_fcs) {
-    LOG_UART_DBG(&huart5, "AX Wrong FCS");
-    return AX25_DEC_FAIL;
+    return AX25_DEC_CRC_FAIL;
   }
 
   *out_len = received_bytes - sizeof(uint16_t);
@@ -341,7 +336,7 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
   ax25_decode_status_t status;
 
   if(len > AX25_MAX_FRAME_LEN) {
-    return -1;
+    return -11;
   }
 
   /* Apply one bit per byte for easy decoding */
@@ -359,7 +354,7 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
   /* Perform the actual decoding */
   status = ax25_decode(out, &decode_len, tmp_recv_buf, len * 8);
   if( status != AX25_DEC_OK){
-    return -1;
+    return status;
   }
   return (size_t) decode_len;
 }

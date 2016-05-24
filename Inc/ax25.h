@@ -41,7 +41,12 @@ typedef enum
 
 typedef enum
 {
-  AX25_DEC_FAIL, AX25_DEC_OK
+  AX25_DEC_CRC_FAIL = -50,
+  AX25_DEC_SIZE_ERROR = -40,
+  AX25_DEC_STOP_SYNC_NOT_FOUND = -30,
+  AX25_DEC_START_SYNC_NOT_FOUND = -20,
+  AX25_DEC_FAIL = -10,
+  AX25_DEC_OK = 0
 } ax25_decode_status_t;
 
 typedef struct
