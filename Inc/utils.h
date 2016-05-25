@@ -1,6 +1,5 @@
-/* -*- c++ -*- */
 /*
- * gr-satnogs: SatNOGS GNU Radio Out-Of-Tree Module
+ * upsat-comms-software: Communication Subsystem Software for UPSat satellite
  *
  *  Copyright (C) 2016, Libre Space Foundation <http://librespacefoundation.org/>
  *
