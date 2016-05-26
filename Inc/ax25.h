@@ -60,11 +60,11 @@ typedef enum
 
 typedef enum
 {
-  AX25_DEC_CRC_FAIL = -50,
-  AX25_DEC_SIZE_ERROR = -40,
-  AX25_DEC_STOP_SYNC_NOT_FOUND = -30,
-  AX25_DEC_START_SYNC_NOT_FOUND = -20,
-  AX25_DEC_FAIL = -10,
+  AX25_DEC_CRC_FAIL = -55,
+  AX25_DEC_SIZE_ERROR = -54,
+  AX25_DEC_STOP_SYNC_NOT_FOUND = -53,
+  AX25_DEC_START_SYNC_NOT_FOUND = -52,
+  AX25_DEC_FAIL = -51,
   AX25_DEC_OK = 0
 } ax25_decode_status_t;
 
@@ -110,5 +110,13 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len);
 
 int32_t
 ax25_recv(uint8_t *out, const uint8_t *in, size_t len);
+
+uint8_t
+ax25_check_dest_addr(const uint8_t *ax25_frame, size_t frame_len,
+		     const char *addr);
+
+int32_t
+ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
+		     size_t addr_len);
 
 #endif

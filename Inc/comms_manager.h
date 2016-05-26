@@ -17,17 +17,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INC_STATUS_H_
-#define INC_STATUS_H_
+#ifndef INC_COMMS_MANAGER_H_
+#define INC_COMMS_MANAGER_H_
 
+#include "rx_manager.h"
+#include "tx_manager.h"
+#include "config.h"
 
-enum {
-  COMMS_STATUS_INVALID_FRAME = -5,
-  COMMS_STATUS_TIMEOUT = -4,
-  COMMS_STATUS_NO_DATA = -3,
-  COMMS_STATUS_BUFFER_OVERFLOW = -2,
-  COMMS_STATUS_BUFFER_UNDERFLOW = -1,
-  COMMS_STATUS_OK = 0,
-};
+int32_t
+recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 
-#endif /* INC_STATUS_H_ */
+#endif /* INC_COMMS_MANAGER_H_ */

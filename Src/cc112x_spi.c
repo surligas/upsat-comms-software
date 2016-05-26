@@ -230,7 +230,7 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
       /* Timeout occurred. Abort */
       if(!tx_thr_flag){
 	ret = cc_tx_cmd (SFTX);
-        return STATUS_TIMEOUT;
+        return COMMS_STATUS_TIMEOUT;
       }
 
       processed = in_fifo - CC1120_TXFIFO_IRQ_THR + 1;
@@ -371,7 +371,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   if(timeout){
     cc_rx_cmd(SFRX);
     cc_rx_cmd(SIDLE);
-    return STATUS_TIMEOUT;
+    return COMMS_STATUS_TIMEOUT;
   }
 
   /*
@@ -405,7 +405,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
     if (timeout) {
       cc_rx_cmd (SFRX);
       cc_rx_cmd(SIDLE);
-      return STATUS_TIMEOUT;
+      return COMMS_STATUS_TIMEOUT;
     }
 
     /* We can now dequeue CC1120_BYTES_IN_RX_FIF0 bytes */
@@ -414,7 +414,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
     if(ret) {
       cc_rx_cmd(SFRX);
       cc_rx_cmd(SIDLE);
-      return STATUS_NO_DATA;
+      return COMMS_STATUS_NO_DATA;
     }
     received += CC1120_BYTES_IN_RX_FIF0;
   }
@@ -431,7 +431,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   if(timeout){
     cc_rx_cmd(SFRX);
     cc_rx_cmd(SIDLE);
-    return STATUS_TIMEOUT;
+    return COMMS_STATUS_TIMEOUT;
   }
 
   /* Now dequeue the remaining bytes in the FIFO if any left*/
@@ -440,7 +440,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
     if (ret) {
       cc_rx_cmd (SFRX);
       cc_rx_cmd(SIDLE);
-      return STATUS_NO_DATA;
+      return COMMS_STATUS_NO_DATA;
     }
   }
   else if(frame_len - received == 1) {

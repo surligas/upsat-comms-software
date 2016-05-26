@@ -31,8 +31,9 @@ static uint8_t tmp_buf[AX25_MAX_FRAME_LEN + 2];
  * @param out the output buffer
  * @param len the length of the output buffer
  * @param dev_rx_buffer a buffer that will hold the SPI resulting bytes
- * @param timeout_ms the timeout limit in millisecconds
- * @return
+ * @param timeout_ms the timeout limit in milliseconds
+ * @return the number of bytes received and decoded or appropriate error code.
+ * Note that this function does not perform any AX.25 header extraction
  */
 int32_t
 rx_data(uint8_t *out, size_t len, uint8_t *dev_rx_buffer, size_t timeout_ms)

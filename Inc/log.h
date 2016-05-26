@@ -27,18 +27,18 @@ static char _log_uart_buffer[COMMS_UART_BUF_LEN];
 
 #if COMMS_UART_DBG_EN
 #define LOG_UART_DBG(huart, M, ...) 									\
-	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 						\
-			"[DEBUG] %s:%d: " M "\n",									\
+	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 							\
+			"[DEBUG] %s:%d: " M "\n",							\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
-	HAL_UART_Transmit_IT (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer));				\
+	HAL_UART_Transmit (huart, _log_uart_buffer,							\
+					   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
 
 #define LOG_UART_ERROR(huart, M, ...) 									\
-	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 						\
-			"[ERROR] %s:%d: " M "\n",									\
+	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 							\
+			"[ERROR] %s:%d: " M "\n",							\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
-	HAL_UART_Transmit_IT (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer));				\
+	HAL_UART_Transmit (huart, _log_uart_buffer,							\
+					   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
 
 #else
 #define LOG_UART_DBG(huart, M, ...)

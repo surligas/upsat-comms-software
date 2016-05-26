@@ -21,6 +21,10 @@
 #include "log.h"
 #include <string.h>
 #include "stm32f4xx_hal.h"
+#include "services.h"
+
+#undef __FILE_ID__
+#define __FILE_ID__ 669
 
 extern UART_HandleTypeDef huart5;
 
@@ -62,7 +66,7 @@ ax25_create_addr_field (uint8_t *out, const uint8_t  *dest_addr,
 {
   uint16_t i = 0;
 
-  for (i = 0; i < strnlen (dest_addr, AX25_MAX_ADDR_LEN); i++) {
+  for (i = 0; i < strnlen (dest_addr, AX25_CALLSIGN_MAX_LEN); i++) {
     *out++ = dest_addr[i] << 1;
   }
   /*
@@ -77,7 +81,7 @@ ax25_create_addr_field (uint8_t *out, const uint8_t  *dest_addr,
   *out++ = ((0x0F & dest_ssid) << 1) | 0x60;
   //*out++ = ((0b1111 & dest_ssid) << 1) | 0b01100000;
 
-  for (i = 0; i < strnlen (src_addr, AX25_MAX_ADDR_LEN); i++) {
+  for (i = 0; i < strnlen (src_addr, AX25_CALLSIGN_MAX_LEN); i++) {
     *out++ = dest_addr[i] << 1;
   }
   for (; i < AX25_CALLSIGN_MAX_LEN; i++) {
@@ -355,7 +359,7 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
   ax25_decode_status_t status;
 
   if(len > AX25_MAX_FRAME_LEN) {
-    return -11;
+    return AX25_DEC_SIZE_ERROR;
   }
 
   /* Apply one bit per byte for easy decoding */
@@ -376,4 +380,64 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
     return status;
   }
   return (size_t) decode_len;
+}
+
+/**
+ * Checks if the destination field of an AX.25 frame matched a specific address
+ * @param ax25_frame an ax.25 frame, decoded using the \p ax25_recv() function.
+ * @param frame_len the size of the decoded AX.25 frame
+ * @param addr string with the desired address
+ * @return 1 if the \p addr matched the destination address of the AX.25 frame,
+ * 0 otherwise.
+ */
+uint8_t
+ax25_check_dest_addr(const uint8_t *ax25_frame, size_t frame_len,
+		     const char *addr)
+{
+  size_t addr_len;
+  size_t i;
+
+  addr_len = strnlen(addr, AX25_MAX_ADDR_LEN);
+
+  /* Perform some size sanity checks */
+  if(addr_len < AX25_MIN_ADDR_LEN || addr_len > frame_len) {
+    return 0;
+  }
+
+  for(i = 0; i < addr_len; i++){
+    if((ax25_frame[i] >> 1) != addr[i]){
+      return 0;
+    }
+  }
+
+  /* All good, this frame was for us */
+  return 1;
+}
+
+/**
+ * This function extracts the AX.25 payload from an AX.25 frame
+ * @param out the output buffer
+ * @param in the buffer with the AX.25 frame
+ * @param frame_len the AX.25 frame size in bytes
+ * @param addr_len the AX.25 address length in bytes
+ * @return the size of the payload in bytes or appropriate error code
+ */
+int32_t
+ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
+		     size_t addr_len)
+{
+  if (C_ASSERT (out == NULL || in == NULL)) {
+    return AX25_DEC_FAIL;
+  }
+
+  if(addr_len != AX25_MIN_ADDR_LEN && addr_len != AX25_MIN_ADDR_LEN) {
+    return AX25_DEC_SIZE_ERROR;
+  }
+
+  if(addr_len <= frame_len) {
+    return AX25_DEC_SIZE_ERROR;
+  }
+
+  memcpy(out, in + addr_len, frame_len - addr_len);
+  return frame_len - addr_len;
 }
