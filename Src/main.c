@@ -45,8 +45,6 @@
 #include "comms.h"
 #include "pkt_pool.h"
 #include "service_utilities.h"
-#include "tx_manager.h"
-#include "rx_manager.h"
 #include "comms_manager.h"
 /* USER CODE END Includes */
 
@@ -115,12 +113,7 @@ SAT_returnState tx_test(tc_tm_pkt *pkt) {
 
     //if(!C_ASSERT(size > 0) == true) { return SATR_ERROR; }
 
-    ret = ax25_send (tx_buf, payload, size);
-
     if (ret > 0) {
-      LOG_UART_DBG(&huart5, "AX.25 frame of %d bytes", ret);
-      HAL_Delay (50);
-      ret = cc_tx_data (tx_buf, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
     }
@@ -245,7 +238,7 @@ int main(void)
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
 		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
-    ret =  tx_data(payload, ret, aRxBuffer, COMMS_DEFAULT_TIMEOUT_MS);
+    ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
     HAL_Delay (50);
     if (ret > 0) {
       HAL_Delay (50);

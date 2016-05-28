@@ -43,18 +43,19 @@ static uint8_t rx_tmp_buf[2 + CC1120_RX_FIFO_SIZE];
  * @param us how many microseconds to delay the execution
  */
 static inline void
-delay_us(uint32_t us) {
-	volatile uint32_t cycles = (SystemCoreClock/1000000L)*us;
-	volatile uint32_t start = 0;
-	do  {
-	  start++;
-	} while(start < cycles);
+delay_us (uint32_t us)
+{
+  volatile uint32_t cycles = (SystemCoreClock / 1000000L) * us;
+  volatile uint32_t start = 0;
+  do {
+    start++;
+  }
+  while (start < cycles);
 }
 
 uint8_t
 cc_tx_rd_reg (uint16_t add, uint8_t *data)
 {
-
   uint8_t temp_TxBuffer[4];
   uint8_t temp_RxBuffer[4] = { 0, 0, 0, 0 };
   uint8_t len = 0;

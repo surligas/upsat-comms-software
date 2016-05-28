@@ -42,6 +42,8 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   if(len > AX25_MAX_FRAME_LEN) {
     return COMMS_STATUS_BUFFER_OVERFLOW;
   }
+
+  memset(spi_buf, 0, sizeof(spi_buf));
   ret = rx_data(interm_buf, len, spi_buf, timeout_ms);
   if(ret < 1){
     return ret;
@@ -58,5 +60,20 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
    */
   ret = ax25_extract_payload(out, interm_buf,
 			     (size_t) ret, AX25_MIN_ADDR_LEN, 1);
+  return ret;
+}
+
+
+int32_t
+send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
+{
+  int32_t ret;
+
+  if(len > AX25_MAX_FRAME_LEN) {
+    return COMMS_STATUS_BUFFER_OVERFLOW;
+  }
+
+  memset(spi_buf, 0, sizeof(spi_buf));
+  ret = tx_data(in, len, spi_buf, timeout_ms);
   return ret;
 }
