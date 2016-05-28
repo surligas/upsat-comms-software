@@ -31,6 +31,11 @@
 			<location>/home/surligas/workspaceac6/ecss_services/platform/comms</location>
 		</link>
 		<link>
+			<name>core</name>
+			<type>2</type>
+			<location>/home/surligas/workspaceac6/ecss_services/core</location>
+		</link>
+		<link>
 			<name>services</name>
 			<type>2</type>
 			<location>/home/surligas/workspaceac6/ecss_services/services</location>

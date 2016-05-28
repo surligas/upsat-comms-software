@@ -20,9 +20,13 @@
 #include "comms_manager.h"
 #include "ax25.h"
 #include "status.h"
+#include "cc_tx_init.h"
+#include "cc_rx_init.h"
 
 static uint8_t interm_buf[AX25_MAX_FRAME_LEN + 2];
 static uint8_t spi_buf[AX25_MAX_FRAME_LEN + 2];
+static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
+static uint8_t tx_buf[AX25_MAX_FRAME_LEN];
 /**
  * This function receives a valid frame from the uplink interface and extracts
  * its payload.
@@ -50,7 +54,7 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   }
 
   /* Now check if the frame was indented for us */
-  check = ax25_check_dest_callsign(interm_buf, (size_t)ret, UPSAT_CALLSIGN);
+  check = ax25_check_dest_callsign(interm_buf, (size_t)ret, __UPSAT_CALLSIGN);
   if(!check){
     return COMMS_STATUS_INVALID_FRAME;
   }
@@ -63,7 +67,13 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   return ret;
 }
 
-
+/**
+ * Send a payload using AX.25 encoding
+ * @param in the payoload buffer
+ * @param len the length of the payload in bytes
+ * @param timeout_ms the timeout limit in milliseconds
+ * @return number of bytes sent or appropriate error code
+ */
 int32_t
 send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
 {
@@ -76,4 +86,128 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
   memset(spi_buf, 0, sizeof(spi_buf));
   ret = tx_data(in, len, spi_buf, timeout_ms);
   return ret;
+}
+
+static inline void
+rf_tx_shutdown()
+{
+
+}
+
+static inline void
+rf_tx_enable()
+{
+
+}
+
+/**
+ * Checks if the received frame contains an RF switch command for the COMMS
+ * subsystem
+ * @param in the payload of the received frame
+ * @param len the length of the payload
+ */
+static inline void
+check_rf_switch_cmd(const uint8_t *in, size_t len)
+{
+  uint32_t i;
+  uint8_t flag = 0;
+  uint32_t *id_ptr;
+  uint32_t cmd_hdr_len = sizeof(__COMMS_RF_SWITCH_CMD);
+  uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
+
+  /* Due to length restrictions, this is definitely not an RF switch command */
+  if(len < cmd_hdr_len || len < cmd_hdr_len + cmd_id_len_bytes){
+    return;
+  }
+
+  /*
+   * RF switch command is intended only for the COMMS subsystem.
+   * There is no ECSS structure here.
+   */
+
+  /* This was not an RF switch command. Proceed normally */
+  if(strncmp((const char *)in, __COMMS_RF_SWITCH_CMD, cmd_hdr_len) != 0){
+    return;
+  }
+
+  /*
+   * Perform a second search now, based on the commands IDs.
+   * Due to the space harmful environment do not be so strict
+   * and accept the command if one of the ID integers are correct.
+   */
+  id_ptr = in + cmd_hdr_len;
+  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
+    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_ON_CMD[i]);
+  }
+
+  if(flag){
+
+  }
+
+  /*
+   * The previous command was not for switching on the RF. Perhaps it is for
+   * shutting it down
+   */
+  flag = 0;
+  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
+    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_OFF_CMD[i]);
+  }
+
+  if(flag) {
+
+  }
+
+}
+
+
+int32_t
+comms_routine()
+{
+  int32_t ret;
+  uint32_t wod_tick;
+
+  wod_tick = HAL_GetTick();
+  while(1) {
+    if(HAL_GetTick() - wod_tick > COMMS_WOD_PERIOD_MS){
+      /* Get the WOD and send it! */
+    }
+
+    ret = recv_payload(rx_buf, AX25_MAX_FRAME_LEN, COMMS_DEFAULT_TIMEOUT_MS);
+
+  }
+}
+
+void
+comms_init ()
+{
+  uint8_t cc_id_tx;
+  uint8_t cc_id_rx;
+
+  /* fetch tx id */
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
+
+  /* fetch rx id */
+  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
+
+  /* Configure TX CC1120 */
+  tx_registerConfig ();
+
+  HAL_Delay (10);
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
+
+  //Configure RX CC1120
+  rx_registerConfig ();
+
+  HAL_Delay (10);
+  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
+
+  //Calibrate TX
+  tx_manualCalibration ();
+
+  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
+
+  //Calibrate RX
+  rx_manualCalibration ();
+
+  cc_rx_rd_reg (0x2f8F, &cc_id_tx);
 }

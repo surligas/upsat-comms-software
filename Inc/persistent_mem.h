@@ -17,13 +17,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SYSTEM_H
-#define __SYSTEM_H
+#ifndef INC_PERSISTENT_MEM_H_
+#define INC_PERSISTENT_MEM_H_
 
-#define SYSTEM_APP_ID _COMMS_APP_ID_
-#define POOL_PKT_EXT
+#include <stdint.h>
+#include <stdlib.h>
 
-#include "services.h"
+#define COMMS_PERSIST_MEM_BASE_ADDR 0x0
 
+void
+comms_write_persistent_word(uint32_t *addr, uint32_t word);
 
-#endif
+uint32_t
+comms_read_persistent_word(uint32_t *addr);
+
+#endif /* INC_PERSISTENT_MEM_H_ */

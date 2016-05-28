@@ -332,16 +332,16 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
   size_t pad_bits = 0;
 
   /* Create the address field */
-  addr_len = ax25_create_addr_field (addr_buf, UPSAT_DEST_CALLSIGN,
-				     UPSAT_DEST_SSID, UPSAT_CALLSIGN,
-				     UPSAT_SSID);
+  addr_len = ax25_create_addr_field (addr_buf, __UPSAT_DEST_CALLSIGN,
+				     __UPSAT_DEST_SSID, __UPSAT_CALLSIGN,
+				     __UPSAT_SSID);
 
   /*
    * Prepare address and payload into one frame placing the result in
    * an intermediate buffer
    */
   interm_len = ax25_prepare_frame (interm_send_buf, in, len, AX25_UI_FRAME,
-				   addr_buf, addr_len, UPSAT_AX25_CTRL, 1);
+				   addr_buf, addr_len, __UPSAT_AX25_CTRL, 1);
 
   status = ax25_bit_stuffing(tmp_bit_buf, &ret_len, interm_send_buf, interm_len);
   if( status != AX25_ENC_OK){

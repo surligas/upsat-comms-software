@@ -161,42 +161,8 @@ int main(void)
 
   HAL_Delay (100);
 
-  uint8_t cc_id_tx;
-  uint8_t cc_id_rx;
-
-  //fetch tx id
-  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
-  LOG_UART_DBG(&huart5, "1st hello from TX %d\n", cc_id_tx);
-
-  //fetch rx id
-  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
-  LOG_UART_DBG(&huart5, "1st hello from RX %d\n", cc_id_rx);
-
-  //Configure TX CC1120
-  tx_registerConfig ();
-
-  HAL_Delay (10);
-  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
-  LOG_UART_DBG(&huart5, "TX CC1120 %d configured\n", cc_id_tx);
-
-  //Configure RX CC1120
-  rx_registerConfig ();
-
-  HAL_Delay (10);
-  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
-  LOG_UART_DBG(&huart5, "RX CC1120 %u configured\n", cc_id_rx);
-
-  //Calibrate TX
-  tx_manualCalibration ();
-
-  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
-  LOG_UART_DBG(&huart5, "TX CC1120 %u calibrated\n", cc_id_tx);
-
-  //Calibrate RX
-  rx_manualCalibration ();
-
-  cc_rx_rd_reg (0x2f8F, &cc_id_tx);
-  LOG_UART_DBG(&huart5, "RX CC1120 %u calibrated\n", cc_id_tx);
+  comms_init();
+  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
 
   HAL_Delay (100);
 
@@ -222,11 +188,6 @@ int main(void)
 
   while (1) {
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
-
-    HAL_Delay (100);
-
-    res = cc_tx_rd_reg (0x2f8F, &cc_id_tx);
-    LOG_UART_DBG(&huart5, "TX %x, state: %x", cc_id_tx, res);
 
     HAL_Delay (300);
 
@@ -374,7 +335,7 @@ void MX_UART5_Init(void)
 {
 
   huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
+  huart5.Init.BaudRate = 9600;
   huart5.Init.WordLength = UART_WORDLENGTH_8B;
   huart5.Init.StopBits = UART_STOPBITS_1;
   huart5.Init.Parity = UART_PARITY_NONE;
@@ -390,7 +351,7 @@ void MX_USART3_UART_Init(void)
 {
 
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 9600;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;

@@ -23,28 +23,50 @@
 #include "config.h"
 #include <string.h>
 
-static char _log_uart_buffer[COMMS_UART_BUF_LEN];
+static uint8_t _log_uart_buffer[COMMS_UART_BUF_LEN];
+static uint8_t _ecss_dbg_buffer[200];
+static size_t _ecss_dbg_buffer_len;
 
 #if COMMS_UART_DBG_EN
+
+#if COMMS_UART_DEST_OBC
+#define LOG_UART_DBG(huart, M, ...)					\
+	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN,			\
+			"[DEBUG] %s:%d: " M "\n",			\
+			 __FILE__, __LINE__, ##__VA_ARGS__);		\
+      event_crt_pkt_api (_ecss_dbg_buffer, _log_uart_buffer,		\
+                         666, 666, "", &_ecss_dbg_buffer_len, SATR_OK);	\
+      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
+
+#define LOG_UART_ERROR(huart, M, ...) 					\
+	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 			\
+			"[ERROR] %s:%d: " M "\n",			\
+			 __FILE__, __LINE__, ##__VA_ARGS__);		\
+      event_crt_pkt_api (_ecss_dbg_buffer, _log_uart_buffer, 666, 666,	\
+                         "", &_ecss_dbg_buffer_len, SATR_OK);		\
+      HAL_uart_tx (DBG_APP_ID, _log_uart_buffer, _ecss_dbg_buffer_len);	\
+
+#else
+
 #define LOG_UART_DBG(huart, M, ...) 									\
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 							\
 			"[DEBUG] %s:%d: " M "\n",							\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
 	HAL_UART_Transmit (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
+			   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
 
 #define LOG_UART_ERROR(huart, M, ...) 									\
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 							\
 			"[ERROR] %s:%d: " M "\n",							\
 			 __FILE__, __LINE__, ##__VA_ARGS__);						\
 	HAL_UART_Transmit (huart, _log_uart_buffer,							\
-					   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
+			   strlen (_log_uart_buffer), COMMS_DEFAULT_TIMEOUT_MS);	\
+
+#endif /* COMMS_UART_DEST_OBC */
 
 #else
 #define LOG_UART_DBG(huart, M, ...)
 #define LOG_UART_ERROR(huart, M, ...)
 #endif
-
-
 
 #endif /* INC_LOG_H_ */

@@ -22,11 +22,17 @@
 
 #include "cc1120_config.h"
 
-static const char *UPSAT_CALLSIGN = "UPSAT";
-static const uint8_t UPSAT_SSID = 0;
-static const uint8_t UPSAT_AX25_CTRL = 0x03;
-static const char UPSAT_DEST_CALLSIGN[] = "ABCD";
-static const uint8_t UPSAT_DEST_SSID = 0;
+static const char __UPSAT_CALLSIGN[] = "UPSAT";
+static const uint8_t __UPSAT_SSID = 0;
+static const uint8_t __UPSAT_AX25_CTRL = 0x03;
+static const char __UPSAT_DEST_CALLSIGN[] = "ABCD";
+static const uint8_t __UPSAT_DEST_SSID = 0;
+static const char __COMMS_RF_SWITCH_CMD[] = "RF SW CMD";
+static const uint32_t __COMMS_RF_SWITCH_ON_CMD[] =
+    {0xa94249da, 0xa7a45d61, 0x413981b, 0xa94ee2d3};
+static const uint32_t __COMMS_RF_SWITCH_OFF_CMD[] =
+  { 0xdf553d59, 0x4d2f84c0, 0x24d60191, 0x9287b5fd };
+
 
 /**
  * Enables/disables the UART debug
@@ -35,8 +41,18 @@ static const uint8_t UPSAT_DEST_SSID = 0;
 #define COMMS_UART_BUF_LEN 512
 
 /**
+ * If set to 1, the UART target is the OBC. If set to 0, the UART target
+ * is the FTDI debugging dongle
+ */
+#define COMMS_UART_DEST_OBC 0
+/**
  * The default time out period is 4 seconds
  */
 #define COMMS_DEFAULT_TIMEOUT_MS 4000
+
+/**
+ * The WOD (World Orbit Data) period in milliseconds
+ */
+#define COMMS_WOD_PERIOD_MS  30000
 
 #endif /* CONFIG_H_ */
