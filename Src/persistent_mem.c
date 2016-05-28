@@ -17,13 +17,36 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __SYSTEM_H
-#define __SYSTEM_H
+#include "persistent_mem.h"
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_flash.h"
 
-#define SYSTEM_APP_ID _COMMS_APP_ID_
-#define POOL_PKT_EXT
+static inline uint8_t
+is_valid_flash_mem(uint32_t *addr)
+{
+  return 0;
+}
 
-#include "services.h"
+/**
+ * Stores a word at the flash memory of the processor
+ * @param addr the address to write
+ * @param word the data that are going to be stored
+ */
+void
+comms_write_persistent_word(uint32_t *addr, uint32_t word)
+{
+  HAL_FLASH_Lock();
+  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, word);
+  HAL_FLASH_Unlock();
+}
 
-
-#endif
+/**
+ * Reads a word from the flash memory
+ * @param addr the address to read
+ * @return the word value of the address \p addr
+ */
+uint32_t
+comms_read_persistent_word(uint32_t *addr)
+{
+  return *addr;
+}

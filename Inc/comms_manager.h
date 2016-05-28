@@ -30,5 +30,11 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 int32_t
 send_payload(const uint8_t *in, size_t len, size_t timeout_ms);
 
+void
+comms_init();
+
+int32_t
+comms_routine();
+
 
 #endif /* INC_COMMS_MANAGER_H_ */

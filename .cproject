@@ -32,6 +32,7 @@
 								<option id="gnu.c.compiler.option.debugging.level.1442065438" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.565972533" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Inc"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/core}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/services}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/comms}&quot;"/>
 									<listOptionValue builtIn="false" value="../Drivers/STM32F4xx_HAL_Driver/Inc"/>
@@ -77,6 +78,9 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.178557920" name="gps.h" rcbsApplicability="disable" resourcePath="core/gps.h" toolsToInvoke=""/>
+					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.62990513" name="su_mnlp.h" rcbsApplicability="disable" resourcePath="core/su_mnlp.h" toolsToInvoke=""/>
+					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.164425417" name="time_management.h" rcbsApplicability="disable" resourcePath="core/time_management.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.587791681" name="large_data_service.c" rcbsApplicability="disable" resourcePath="services/large_data_service.c" toolsToInvoke="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1629330129.419689860">
 						<tool id="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1629330129.419689860" name="MCU GCC Compiler" superClass="fr.ac6.managedbuild.tool.gnu.cross.c.compiler.1629330129">
 							<option id="gnu.c.compiler.option.dialect.std.298967490" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
@@ -86,11 +90,9 @@
 					</fileInfo>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.753235508" name="scheduling_service.h" rcbsApplicability="disable" resourcePath="services/scheduling_service.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.1402458675" name="large_data_service.h" rcbsApplicability="disable" resourcePath="services/large_data_service.h" toolsToInvoke=""/>
-					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.1028015865" name="su_mnlp.h" rcbsApplicability="disable" resourcePath="services/su_mnlp.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.316465716" name="mass_storage_service.h" rcbsApplicability="disable" resourcePath="services/mass_storage_service.h" toolsToInvoke=""/>
-					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.577747355" name="time_management.h" rcbsApplicability="disable" resourcePath="services/time_management.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="services/scheduling_service.h|services/scheduling_service.c|services/su_mnlp.h|services/su_mnlp.c|services/time_management.c|services/time_management.h|services/mass_storage_service.h|services/mass_storage_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="core/time_management.h|core/time_management.c|core/su_mnlp.h|core/su_mnlp.c|core/gps.h|core/gps.c|services/scheduling_service.h|services/scheduling_service.c|services/su_mnlp.h|services/su_mnlp.c|services/time_management.c|services/time_management.h|services/mass_storage_service.h|services/mass_storage_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
