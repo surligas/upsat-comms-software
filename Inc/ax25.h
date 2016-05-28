@@ -34,6 +34,7 @@
 #define AX25_MIN_CTRL_LEN 1
 #define AX25_MAX_CTRL_LEN 2
 #define AX25_CALLSIGN_MAX_LEN 6
+#define AX25_CALLSIGN_MIN_LEN 2
 /**
  * Due to the AX25 encapsulation the maximum payload is restricted by
  * the AX.25 headers, the leading and trailing SYNC flag and bit stuffing
@@ -60,11 +61,11 @@ typedef enum
 
 typedef enum
 {
-  AX25_DEC_CRC_FAIL = -50,
-  AX25_DEC_SIZE_ERROR = -40,
-  AX25_DEC_STOP_SYNC_NOT_FOUND = -30,
-  AX25_DEC_START_SYNC_NOT_FOUND = -20,
-  AX25_DEC_FAIL = -10,
+  AX25_DEC_CRC_FAIL = -55,
+  AX25_DEC_SIZE_ERROR = -54,
+  AX25_DEC_STOP_SYNC_NOT_FOUND = -53,
+  AX25_DEC_START_SYNC_NOT_FOUND = -52,
+  AX25_DEC_FAIL = -51,
   AX25_DEC_OK = 0
 } ax25_decode_status_t;
 
@@ -90,7 +91,7 @@ ax25_create_addr_field (uint8_t *out, const uint8_t *dest_addr, uint8_t dest_ssi
 
 size_t
 ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
-		    ax25_frame_type_t type, uint8_t *addr, size_t addr_len,
+		    ax25_frame_type_t type, uint8_t *dest, size_t addr_len,
 		    uint16_t ctrl, size_t ctrl_len);
 
 ax25_encode_status_t
@@ -110,5 +111,13 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len);
 
 int32_t
 ax25_recv(uint8_t *out, const uint8_t *in, size_t len);
+
+uint8_t
+ax25_check_dest_callsign (const uint8_t *ax25_frame, size_t frame_len,
+			  const char *dest);
+
+int32_t
+ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
+		     size_t addr_len, size_t ctrl_len);
 
 #endif

@@ -47,6 +47,7 @@
 #include "service_utilities.h"
 #include "tx_manager.h"
 #include "rx_manager.h"
+#include "comms_manager.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -134,6 +135,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int ret = 0;
+  uint8_t rst_src;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -216,6 +218,10 @@ int main(void)
   /*Uart inits*/
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
 
+  /* Sent to OBC the reason of re-booting */
+  HAL_reset_source(&rst_src);
+  event_boot(rst_src);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -255,7 +261,7 @@ int main(void)
     /*--------------RX------------*/
 
     memset(aRxBuffer, 0, 255);
-    ret = rx_data(aRxBuffer, 255, spi_buffer, COMMS_DEFAULT_TIMEOUT_MS);
+    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS);
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }

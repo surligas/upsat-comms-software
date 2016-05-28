@@ -17,26 +17,14 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CONFIG_H_
-#define CONFIG_H_
+#ifndef INC_COMMS_MANAGER_H_
+#define INC_COMMS_MANAGER_H_
 
-#include "cc1120_config.h"
+#include "rx_manager.h"
+#include "tx_manager.h"
+#include "config.h"
 
-static const char *UPSAT_CALLSIGN = "UPSAT";
-static const uint8_t UPSAT_SSID = 0;
-static const uint8_t UPSAT_AX25_CTRL = 0x03;
-static const char UPSAT_DEST_CALLSIGN[] = "ABCD";
-static const uint8_t UPSAT_DEST_SSID = 0;
+int32_t
+recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 
-/**
- * Enables/disables the UART debug
- */
-#define COMMS_UART_DBG_EN 1
-#define COMMS_UART_BUF_LEN 512
-
-/**
- * The default time out period is 4 seconds
- */
-#define COMMS_DEFAULT_TIMEOUT_MS 4000
-
-#endif /* CONFIG_H_ */
+#endif /* INC_COMMS_MANAGER_H_ */

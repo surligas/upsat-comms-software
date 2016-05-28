@@ -40,17 +40,17 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
   int32_t ret = 0;
   /* This routine can not handle large payloads */
   if(len == 0) {
-    return STATUS_NO_DATA;
+    return COMMS_STATUS_NO_DATA;
   }
 
   if(len > COMMS_MAX_PAYLOAD_LEN) {
-    return STATUS_BUFFER_OVERFLOW;
+    return COMMS_STATUS_BUFFER_OVERFLOW;
   }
 
   /* Prepare the AX.25 frame */
   ret = ax25_send(tmp_buf, in, len);
   if(ret < 1){
-    return STATUS_NO_DATA;
+    return COMMS_STATUS_NO_DATA;
   }
 
   /* Issue the frame at the CC1120 */
