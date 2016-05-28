@@ -26,7 +26,6 @@
 
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
-extern UART_HandleTypeDef huart5;
 volatile extern uint8_t tx_thr_flag;
 volatile extern uint8_t tx_fin_flag;
 volatile extern uint8_t rx_sync_flag;
@@ -34,7 +33,8 @@ volatile extern uint8_t rx_finished_flag;
 volatile extern uint8_t rx_thr_flag;
 
 static uint8_t tx_frag_buf[2 + CC1120_TX_FIFO_SIZE];
-static uint8_t rx_spi_tx_buf[CC1120_RX_FIFO_SIZE];
+static uint8_t rx_spi_tx_buf[2 + CC1120_RX_FIFO_SIZE];
+static uint8_t rx_tmp_buf[2 + CC1120_RX_FIFO_SIZE];
 
 
 /**
@@ -172,7 +172,6 @@ int32_t
 cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 	    size_t timeout_ms)
 {
-  uint8_t ret;
   uint8_t gone = 0;
   uint8_t in_fifo = 0;
   uint8_t issue_len;
@@ -204,7 +203,7 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
       memcpy(tx_frag_buf + 2, data, issue_len);
 
       cc_tx_spi_write_fifo (tx_frag_buf, rec_data, issue_len + 2);
-      ret = cc_tx_cmd (STX);
+      cc_tx_cmd (STX);
       /* Take into consideration the extra length byte */
       issue_len++;
     }
@@ -229,7 +228,7 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 
       /* Timeout occurred. Abort */
       if(!tx_thr_flag){
-	ret = cc_tx_cmd (SFTX);
+	cc_tx_cmd (SFTX);
         return COMMS_STATUS_TIMEOUT;
       }
 
@@ -251,7 +250,7 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
     }
   }
 
-  ret = cc_tx_cmd (SFTX);
+  cc_tx_cmd (SFTX);
   return gone + in_fifo - 1;
 }
 
@@ -380,7 +379,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
    */
   do {
       cc_rx_rd_reg(NUM_RXBYTES, &rx_n_bytes);
-  } while (rx_n_bytes < 1);
+  } while (rx_n_bytes < 2);
 
   /* One byte FIFO access */
   cc_rx_rd_reg(SINGLE_RXFIFO, &frame_len);
@@ -464,13 +463,15 @@ cc_rx_spi_read_fifo(uint8_t *out, size_t len)
 {
   HAL_StatusTypeDef ret;
   /* Reset the send buffer */
-  memset(rx_spi_tx_buf, 0, CC1120_RX_FIFO_SIZE);
+  memset(rx_spi_tx_buf, 0, sizeof(rx_spi_tx_buf));
   rx_spi_tx_buf[0] = BURST_RXFIFO;
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(20);
-  ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, out, len + 1,
+  delay_us(4);
+  /* Remove the response SPI byte */
+  ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, rx_tmp_buf, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_SET);
+  memcpy(out, rx_tmp_buf + 1, len);
   return ret;
 }
 
@@ -485,7 +486,7 @@ cc_rx_cmd (uint8_t CMDStrobe)
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t*) aTxBuffer, (uint8_t *) aRxBuffer,
-			   1, 5000);
+			   1, COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
   return aRxBuffer[0];

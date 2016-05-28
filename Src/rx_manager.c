@@ -21,8 +21,9 @@
 #include "ax25.h"
 #include "cc112x_spi.h"
 #include "status.h"
+#include "log.h"
 
-static uint8_t tmp_buf[AX25_MAX_FRAME_LEN + 2];
+uint8_t tmp_buf[AX25_MAX_FRAME_LEN + 2];
 
 /**
  * Received and decodes using the AX.25 encapsulation a new frame.
@@ -40,6 +41,7 @@ rx_data(uint8_t *out, size_t len, uint8_t *dev_rx_buffer, size_t timeout_ms)
 {
   int32_t ret;
 
+  memset(tmp_buf, 0, sizeof(tmp_buf));
   ret = cc_rx_data(tmp_buf, AX25_MAX_FRAME_LEN, COMMS_DEFAULT_TIMEOUT_MS);
   if(ret < 1){
     return ret;
@@ -47,5 +49,6 @@ rx_data(uint8_t *out, size_t len, uint8_t *dev_rx_buffer, size_t timeout_ms)
 
   /* Frame received. Try to decode it using the AX.25 encapsulation */
   ret = ax25_recv(out, tmp_buf, ret);
+
   return ret;
 }

@@ -28,10 +28,9 @@
 
 extern UART_HandleTypeDef huart5;
 
-const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
+static const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 uint8_t interm_send_buf[AX25_MAX_FRAME_LEN] = {0};
-uint8_t tmp_send_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
-uint8_t tmp_recv_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
+uint8_t tmp_bit_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
 
 
 /**
@@ -232,6 +231,10 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
   uint16_t fcs;
   uint16_t recv_fcs;
 
+  if(len < 2 * sizeof(AX25_SYNC_FLAG_MAP_BIN)) {
+    return AX25_DEC_SIZE_ERROR;
+  }
+
   /* Start searching for the SYNC flag */
   for (i = 0; i < len - sizeof(AX25_SYNC_FLAG_MAP_BIN); i++) {
     res = (AX25_SYNC_FLAG_MAP_BIN[0] ^ ax25_frame[i])
@@ -251,7 +254,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
 
   /* We failed to find the SYNC flag */
   if (frame_start == UINT_MAX) {
-    return AX25_DEC_START_SYNC_NOT_FOUND;
+   return AX25_DEC_START_SYNC_NOT_FOUND;
   }
 
   for (i = frame_start + sizeof(AX25_SYNC_FLAG_MAP_BIN);
@@ -273,7 +276,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
 
     if (ax25_frame[i]) {
       cont_1++;
-      decoded_byte |= 1 << bit_cnt;
+      decoded_byte |= (1 << bit_cnt);
       bit_cnt++;
     }
     else {
@@ -295,8 +298,12 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
     }
   }
 
-  if (frame_stop == UINT_MAX || received_bytes < AX25_MIN_ADDR_LEN) {
+  if (frame_stop == UINT_MAX ) {
     return AX25_DEC_STOP_SYNC_NOT_FOUND;
+  }
+
+  if( received_bytes < AX25_MIN_ADDR_LEN ){
+    return AX25_DEC_SIZE_ERROR;
   }
 
   /* Now check the CRC */
@@ -305,6 +312,7 @@ ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
       | out[received_bytes - 1];
 
   if (fcs != recv_fcs) {
+    LOG_UART_DBG(&huart5, "Computed: 0x%02x Recv 0x%02x", fcs, recv_fcs)
     return AX25_DEC_CRC_FAIL;
   }
 
@@ -335,7 +343,7 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
   interm_len = ax25_prepare_frame (interm_send_buf, in, len, AX25_UI_FRAME,
 				   addr_buf, addr_len, UPSAT_AX25_CTRL, 1);
 
-  status = ax25_bit_stuffing(tmp_send_buf, &ret_len, interm_send_buf, interm_len);
+  status = ax25_bit_stuffing(tmp_bit_buf, &ret_len, interm_send_buf, interm_len);
   if( status != AX25_ENC_OK){
     return -1;
   }
@@ -343,7 +351,7 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
   memset(out, 0, ret_len/8 * sizeof(uint8_t));
   /* Pack now the bits into full bytes */
   for (i = 0; i < ret_len; i++) {
-    out[i/8] |= tmp_send_buf[i] << (7 - (i % 8));
+    out[i/8] |= tmp_bit_buf[i] << (7 - (i % 8));
   }
   pad_bits = 8 - (ret_len % 8);
   ret_len += pad_bits;
@@ -364,18 +372,18 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
 
   /* Apply one bit per byte for easy decoding */
   for (i = 0; i < len; i++) {
-    tmp_recv_buf[8*i] = (in[i] >> 7) & 0x1;
-    tmp_recv_buf[8*i + 1] = (in[i] >> 6) & 0x1;
-    tmp_recv_buf[8*i + 2] = (in[i] >> 5) & 0x1;
-    tmp_recv_buf[8*i + 3] = (in[i] >> 4) & 0x1;
-    tmp_recv_buf[8*i + 4] = (in[i] >> 3) & 0x1;
-    tmp_recv_buf[8*i + 5] = (in[i] >> 2) & 0x1;
-    tmp_recv_buf[8*i + 6] = (in[i] >> 1) & 0x1;
-    tmp_recv_buf[8*i + 7] = in[i]  & 0x1;
+    tmp_bit_buf[8*i] = (in[i] >> 7) & 0x1;
+    tmp_bit_buf[8*i + 1] = (in[i] >> 6) & 0x1;
+    tmp_bit_buf[8*i + 2] = (in[i] >> 5) & 0x1;
+    tmp_bit_buf[8*i + 3] = (in[i] >> 4) & 0x1;
+    tmp_bit_buf[8*i + 4] = (in[i] >> 3) & 0x1;
+    tmp_bit_buf[8*i + 5] = (in[i] >> 2) & 0x1;
+    tmp_bit_buf[8*i + 6] = (in[i] >> 1) & 0x1;
+    tmp_bit_buf[8*i + 7] = in[i]  & 0x1;
   }
 
   /* Perform the actual decoding */
-  status = ax25_decode(out, &decode_len, tmp_recv_buf, len * 8);
+  status = ax25_decode(out, &decode_len, tmp_bit_buf, len * 8);
   if( status != AX25_DEC_OK){
     return status;
   }
@@ -386,26 +394,26 @@ ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
  * Checks if the destination field of an AX.25 frame matched a specific address
  * @param ax25_frame an ax.25 frame, decoded using the \p ax25_recv() function.
  * @param frame_len the size of the decoded AX.25 frame
- * @param addr string with the desired address
+ * @param dest string with the desired address
  * @return 1 if the \p addr matched the destination address of the AX.25 frame,
  * 0 otherwise.
  */
 uint8_t
-ax25_check_dest_addr(const uint8_t *ax25_frame, size_t frame_len,
-		     const char *addr)
+ax25_check_dest_callsign (const uint8_t *ax25_frame, size_t frame_len,
+			  const char *dest)
 {
-  size_t addr_len;
+  size_t callsign_len;
   size_t i;
 
-  addr_len = strnlen(addr, AX25_MAX_ADDR_LEN);
+  callsign_len = strnlen(dest, AX25_CALLSIGN_MAX_LEN );
 
   /* Perform some size sanity checks */
-  if(addr_len < AX25_MIN_ADDR_LEN || addr_len > frame_len) {
+  if(callsign_len < AX25_CALLSIGN_MIN_LEN || callsign_len > frame_len) {
     return 0;
   }
 
-  for(i = 0; i < addr_len; i++){
-    if((ax25_frame[i] >> 1) != addr[i]){
+  for(i = 0; i < callsign_len; i++){
+    if((ax25_frame[i] >> 1) != dest[i]){
       return 0;
     }
   }
@@ -424,9 +432,9 @@ ax25_check_dest_addr(const uint8_t *ax25_frame, size_t frame_len,
  */
 int32_t
 ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
-		     size_t addr_len)
+		     size_t addr_len, size_t ctrl_len)
 {
-  if (C_ASSERT (out == NULL || in == NULL)) {
+  if (!C_ASSERT (out != NULL && in != NULL)) {
     return AX25_DEC_FAIL;
   }
 
@@ -434,10 +442,11 @@ ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
     return AX25_DEC_SIZE_ERROR;
   }
 
-  if(addr_len <= frame_len) {
+  if(addr_len + ctrl_len >= frame_len || ctrl_len > 2) {
     return AX25_DEC_SIZE_ERROR;
   }
 
-  memcpy(out, in + addr_len, frame_len - addr_len);
-  return frame_len - addr_len;
+  /* Skip also the control field and the frame type field */
+  memcpy(out, in + addr_len + ctrl_len + 1, frame_len - addr_len - ctrl_len -1);
+  return frame_len - addr_len - ctrl_len - 1;
 }

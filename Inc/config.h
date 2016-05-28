@@ -22,7 +22,7 @@
 
 #include "cc1120_config.h"
 
-static const char UPSAT_CALLSIGN[] = "UPSAT";
+static const char *UPSAT_CALLSIGN = "UPSAT";
 static const uint8_t UPSAT_SSID = 0;
 static const uint8_t UPSAT_AX25_CTRL = 0x03;
 static const char UPSAT_DEST_CALLSIGN[] = "ABCD";

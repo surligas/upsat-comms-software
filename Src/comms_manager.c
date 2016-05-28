@@ -48,12 +48,15 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   }
 
   /* Now check if the frame was indented for us */
-  check = ax25_check_dest_addr(interm_buf, (size_t)ret, UPSAT_CALLSIGN);
+  check = ax25_check_dest_callsign(interm_buf, (size_t)ret, UPSAT_CALLSIGN);
   if(!check){
     return COMMS_STATUS_INVALID_FRAME;
   }
 
-  /* NOTE: UPSat frames using only Short Address field */
-  ret = ax25_extract_payload(out, interm_buf, (size_t) ret, AX25_MIN_ADDR_LEN);
+  /*
+   * NOTE: UPSat frames using only Short Address field.
+   */
+  ret = ax25_extract_payload(out, interm_buf,
+			     (size_t) ret, AX25_MIN_ADDR_LEN, 1);
   return ret;
 }

@@ -111,6 +111,7 @@ static const registerSetting_t TX_preferredSettings[]=
 		{IQIE_Q0,            0x2F},
 		{AGC_GAIN1,          0x13},
 		{SERIAL_STATUS,      0x10},
+		{MODCFG_DEV_E,       0x0B}
 };
 
 
