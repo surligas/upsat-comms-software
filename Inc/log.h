@@ -21,6 +21,7 @@
 #define INC_LOG_H_
 
 #include "config.h"
+#include "services.h"
 #include <string.h>
 
 static uint8_t _log_uart_buffer[COMMS_UART_BUF_LEN];
@@ -44,7 +45,7 @@ static size_t _ecss_dbg_buffer_len;
 			 __FILE__, __LINE__, ##__VA_ARGS__);		\
       event_crt_pkt_api (_ecss_dbg_buffer, _log_uart_buffer, 666, 666,	\
                          "", &_ecss_dbg_buffer_len, SATR_OK);		\
-      HAL_uart_tx (DBG_APP_ID, _log_uart_buffer, _ecss_dbg_buffer_len);	\
+      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
 
 #else
 

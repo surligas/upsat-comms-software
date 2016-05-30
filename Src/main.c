@@ -121,6 +121,28 @@ SAT_returnState tx_test(tc_tm_pkt *pkt) {
       LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
     }
 }
+
+static inline void
+debug_ecss()
+{
+  for (size_t i = 0; i < 50; i++) {
+    payload[0] = 8;
+    payload[1] = 1;
+    payload[2] = 192;
+    payload[4] = 0;
+    payload[5] = 0;
+    payload[6] = 5;
+    payload[7] = 16;
+    payload[8] = 17;
+    payload[9] = 2;
+    payload[10] = 7;
+    payload[11] = 0;
+    payload[12] = 200;
+    send_payload (payload, 13, COMMS_DEFAULT_TIMEOUT_MS);
+    HAL_Delay(1);
+  }
+  HAL_Delay(1000);
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -159,7 +181,7 @@ int main(void)
   HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET); //PIN36 2RESETN
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET); //PIN36 2CSN
 
-  HAL_Delay (100);
+  HAL_Delay (4000);
 
   comms_init();
   LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
@@ -191,6 +213,8 @@ int main(void)
 
     HAL_Delay (300);
 
+    debug_ecss();
+
     /*--------------TX------------*/
 
     /* Send a dummy message towards earth */
@@ -209,7 +233,6 @@ int main(void)
       LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
     }
     loop++;
-
 
 
     /*--------------RX------------*/
@@ -424,17 +447,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(RESETN_RX_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CC_GPIO3_RXFIFO_ABOVE_THR_Pin */
-  GPIO_InitStruct.Pin = CC_GPIO3_RXFIFO_ABOVE_THR_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  /*Configure GPIO pin : CC_GPIO2_START_END_OF_PACKET_Pin */
+  GPIO_InitStruct.Pin = CC_GPIO2_START_END_OF_PACKET_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(CC_GPIO3_RXFIFO_ABOVE_THR_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : CC_GPIO2_END_OF_PACKET_Pin */
-  GPIO_InitStruct.Pin = CC_GPIO2_END_OF_PACKET_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(CC_GPIO2_END_OF_PACKET_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(CC_GPIO2_START_END_OF_PACKET_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : CS_SPI2_RX_Pin */
   GPIO_InitStruct.Pin = CS_SPI2_RX_Pin;
@@ -443,11 +460,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(CS_SPI2_RX_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CC_GPIO0_SYNC_RECEIVED_Pin */
-  GPIO_InitStruct.Pin = CC_GPIO0_SYNC_RECEIVED_Pin;
+  /*Configure GPIO pin : CC_GPIO0_RXFIFO_THR_Pin */
+  GPIO_InitStruct.Pin = CC_GPIO0_RXFIFO_THR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(CC_GPIO0_SYNC_RECEIVED_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(CC_GPIO0_RXFIFO_THR_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA8 */
   GPIO_InitStruct.Pin = GPIO_PIN_8;
@@ -486,6 +503,7 @@ void MX_GPIO_Init(void)
 void
 HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
 {
+  GPIO_PinState state;
   switch(GPIO_Pin){
     case GPIO_PIN_3:
       tx_fin_flag = 1;
@@ -493,13 +511,17 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
     case GPIO_PIN_2:
       tx_thr_flag = 1;
       break;
-    case CC_GPIO0_SYNC_RECEIVED_Pin:
-      rx_sync_flag = 1;
+    case CC_GPIO2_START_END_OF_PACKET_Pin:
+      state = HAL_GPIO_ReadPin (CC_GPIO2_START_END_OF_PACKET_GPIO_Port,
+				CC_GPIO2_START_END_OF_PACKET_Pin);
+      if(state){
+	rx_sync_flag = 1;
+      }
+      else {
+	rx_finished_flag = 1;
+      }
       break;
-    case CC_GPIO2_END_OF_PACKET_Pin:
-      rx_finished_flag = 1;
-      break;
-    case CC_GPIO3_RXFIFO_ABOVE_THR_Pin:
+    case CC_GPIO0_RXFIFO_THR_Pin:
       rx_thr_flag = 1;
       break;
   }
