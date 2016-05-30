@@ -26,6 +26,7 @@
 
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
+extern UART_HandleTypeDef huart5;
 volatile extern uint8_t tx_thr_flag;
 volatile extern uint8_t tx_fin_flag;
 volatile extern uint8_t rx_sync_flag;

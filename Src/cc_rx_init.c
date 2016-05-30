@@ -51,10 +51,10 @@ typedef struct
 
 static const registerSetting_t RX_preferredSettings[]=
 {
-  {IOCFG3,            0x00}, /* RXFIFO_THR, on rising edge*/
-  {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on failing edge*/
+  {IOCFG3,            0xB0}, /* This GPIO Pin DOES NOT WORK ON OUR BOARD!!!!! */
+  {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on rising-falling edge*/
   {IOCFG1,            0xB0},
-  {IOCFG0,            0x06}, /* PKT_SYNC_RXTX, on rising edge*/
+  {IOCFG0,            0x00}, /* RXFIFO_THR, on rising edge */
   {SYNC1,             0x7A},
   {SYNC0,             0x0E},
   {SYNC_CFG1,         0x0B},
