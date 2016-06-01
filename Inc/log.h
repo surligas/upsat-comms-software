@@ -35,16 +35,16 @@ static size_t _ecss_dbg_buffer_len;
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN,			\
 			"[DEBUG] %s:%d: " M "\n",			\
 			 __FILE__, __LINE__, ##__VA_ARGS__);		\
-      event_crt_pkt_api (_ecss_dbg_buffer, _log_uart_buffer,		\
-                         666, 666, "", &_ecss_dbg_buffer_len, SATR_OK);	\
+      event_dbg_api (_ecss_dbg_buffer, _log_uart_buffer,		\
+                         &_ecss_dbg_buffer_len);	\
       HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
 
 #define LOG_UART_ERROR(huart, M, ...) 					\
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 			\
 			"[ERROR] %s:%d: " M "\n",			\
 			 __FILE__, __LINE__, ##__VA_ARGS__);		\
-      event_crt_pkt_api (_ecss_dbg_buffer, _log_uart_buffer, 666, 666,	\
-                         "", &_ecss_dbg_buffer_len, SATR_OK);		\
+      event_dbg_api (_ecss_dbg_buffer, _log_uart_buffer, \
+      	&_ecss_dbg_buffer_len);		\
       HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
 
 #else
