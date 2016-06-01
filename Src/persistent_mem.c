@@ -35,9 +35,9 @@ is_valid_flash_mem(uint32_t *addr)
 void
 comms_write_persistent_word(uint32_t *addr, uint32_t word)
 {
-  HAL_FLASH_Lock();
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, word);
-  HAL_FLASH_Unlock();
+  //HAL_FLASH_Lock();
+  //HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, word);
+  //HAL_FLASH_Unlock();
 }
 
 /**
