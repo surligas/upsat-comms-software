@@ -135,7 +135,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
    * Due to the space harmful environment do not be so strict
    * and accept the command if one of the ID integers are correct.
    */
-  id_ptr = in + cmd_hdr_len;
+  id_ptr = (uint32_t*)(in + cmd_hdr_len);
   for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
     flag |= (id_ptr[i] == __COMMS_RF_SWITCH_ON_CMD[i]);
   }

@@ -148,7 +148,7 @@ cc_tx_cmd (uint8_t CMDStrobe)
  * @return 0 on success of HAL_StatusTypeDef appropriate error code
  */
 HAL_StatusTypeDef
-cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
+cc_tx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len)
 {
   HAL_StatusTypeDef ret;
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
