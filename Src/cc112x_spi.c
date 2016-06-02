@@ -432,7 +432,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   if(timeout){
     cc_rx_cmd(SFRX);
     cc_rx_cmd(SIDLE);
-    return COMMS_STATUS_TIMEOUT;
+    return COMMS_STATUS_RXFIFO_ERROR;
   }
 
   /* Now dequeue the remaining bytes in the FIFO if any left*/

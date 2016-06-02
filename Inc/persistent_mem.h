@@ -26,9 +26,9 @@
 #define COMMS_PERSIST_MEM_BASE_ADDR 0x0
 
 void
-comms_write_persistent_word(uint32_t *addr, uint32_t word);
+comms_write_persistent_word(uint32_t word);
 
 uint32_t
-comms_read_persistent_word(uint32_t *addr);
+comms_read_persistent_word();
 
 #endif /* INC_PERSISTENT_MEM_H_ */
