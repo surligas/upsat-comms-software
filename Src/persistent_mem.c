@@ -18,35 +18,24 @@
  */
 
 #include "persistent_mem.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_flash.h"
-
-static inline uint8_t
-is_valid_flash_mem(uint32_t *addr)
-{
-  return 0;
-}
+#include "flash.h"
 
 /**
- * Stores a word at the flash memory of the processor
- * @param addr the address to write
+ * Stores a word at the one word long flash memory of the processor
  * @param word the data that are going to be stored
  */
 void
-comms_write_persistent_word(uint32_t *addr, uint32_t word)
+comms_write_persistent_word(uint32_t word)
 {
-  HAL_FLASH_Lock();
-  HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr, word);
-  HAL_FLASH_Unlock();
+  flash_write_trasmit(word);
 }
 
 /**
  * Reads a word from the flash memory
- * @param addr the address to read
- * @return the word value of the address \p addr
+ * @return the word value
  */
 uint32_t
-comms_read_persistent_word(uint32_t *addr)
+comms_read_persistent_word()
 {
-  return *addr;
+  return flash_read_trasmit();
 }

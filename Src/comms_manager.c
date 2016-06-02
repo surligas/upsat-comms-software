@@ -22,11 +22,109 @@
 #include "status.h"
 #include "cc_tx_init.h"
 #include "cc_rx_init.h"
+#include "persistent_mem.h"
+#include "utils.h"
 
 static uint8_t interm_buf[AX25_MAX_FRAME_LEN + 2];
 static uint8_t spi_buf[AX25_MAX_FRAME_LEN + 2];
 static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
-static uint8_t tx_buf[AX25_MAX_FRAME_LEN];
+
+static inline void
+rf_tx_shutdown()
+{
+  comms_write_persistent_word(0x0);
+}
+
+static inline void
+rf_tx_enable()
+{
+  comms_write_persistent_word(0xFFFFFFFF);
+}
+
+/**
+ * Checks if the TX is enabled or not.
+ * For robustness, this routine does not check the flash value for equality.
+ * Instead, it counts the 1-bits and if the number is greater than 16 the
+ * stored value is considered as true. Otherwise, false.
+ * @return 0 if the TX is disabled, 1 if it is enabled
+ */
+uint8_t
+is_tx_enabled()
+{
+  uint32_t cnt;
+  uint32_t val;
+
+  val = comms_read_persistent_word();
+  cnt = bit_count(val);
+  if(val > 16) {
+    return 1;
+  }
+  return 0;
+}
+
+/**
+ * Checks if the received frame contains an RF switch command for the COMMS
+ * subsystem
+ * @param in the payload of the received frame
+ * @param len the length of the payload
+ * @return 0 in case the received payload was not an RF switch command,
+ * 1 if it was.
+ */
+static inline uint8_t
+check_rf_switch_cmd(const uint8_t *in, size_t len)
+{
+  uint32_t i;
+  uint8_t flag = 0;
+  uint32_t *id_ptr;
+  uint32_t cmd_hdr_len = sizeof(__COMMS_RF_SWITCH_CMD);
+  uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
+
+  /* Due to length restrictions, this is definitely not an RF switch command */
+  if(len < cmd_hdr_len || len < cmd_hdr_len + cmd_id_len_bytes){
+    return 0;
+  }
+
+  /*
+   * RF switch command is intended only for the COMMS subsystem.
+   * There is no ECSS structure here.
+   */
+
+  /* This was not an RF switch command. Proceed normally */
+  if(strncmp((const char *)in, __COMMS_RF_SWITCH_CMD, cmd_hdr_len) != 0){
+    return 0;
+  }
+
+  /*
+   * Perform a second search now, based on the commands IDs.
+   * Due to the space harmful environment do not be so strict
+   * and accept the command if one of the ID integers are correct.
+   */
+  id_ptr = (uint32_t *)(in + cmd_hdr_len);
+  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
+    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_ON_CMD[i]);
+  }
+
+  if(flag){
+    rf_tx_enable();
+    return 1;
+  }
+
+  /*
+   * The previous command was not for switching on the RF. Perhaps it is for
+   * shutting it down
+   */
+  flag = 0;
+  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
+    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_OFF_CMD[i]);
+  }
+
+  if(flag) {
+    rf_tx_shutdown();
+    return 1;
+  }
+  return 0;
+}
+
 /**
  * This function receives a valid frame from the uplink interface and extracts
  * its payload.
@@ -64,6 +162,14 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
    */
   ret = ax25_extract_payload(out, interm_buf,
 			     (size_t) ret, AX25_MIN_ADDR_LEN, 1);
+
+  /* Now check if the received frame contains an RF swicth ON/OFF command */
+  if(ret > 0){
+    check = check_rf_switch_cmd(out, ret);
+    if(check){
+      return COMMS_STATUS_RF_SWITCH_CMD;
+    }
+  }
   return ret;
 }
 
@@ -83,80 +189,14 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
     return COMMS_STATUS_BUFFER_OVERFLOW;
   }
 
+  /* Check if the TX is enabled */
+  if(!is_tx_enabled()){
+    return COMMS_STATUS_RF_OFF;
+  }
+
   memset(spi_buf, 0, sizeof(spi_buf));
   ret = tx_data(in, len, spi_buf, timeout_ms);
   return ret;
-}
-
-static inline void
-rf_tx_shutdown()
-{
-
-}
-
-static inline void
-rf_tx_enable()
-{
-
-}
-
-/**
- * Checks if the received frame contains an RF switch command for the COMMS
- * subsystem
- * @param in the payload of the received frame
- * @param len the length of the payload
- */
-static inline void
-check_rf_switch_cmd(const uint8_t *in, size_t len)
-{
-  uint32_t i;
-  uint8_t flag = 0;
-  uint32_t *id_ptr;
-  uint32_t cmd_hdr_len = sizeof(__COMMS_RF_SWITCH_CMD);
-  uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
-
-  /* Due to length restrictions, this is definitely not an RF switch command */
-  if(len < cmd_hdr_len || len < cmd_hdr_len + cmd_id_len_bytes){
-    return;
-  }
-
-  /*
-   * RF switch command is intended only for the COMMS subsystem.
-   * There is no ECSS structure here.
-   */
-
-  /* This was not an RF switch command. Proceed normally */
-  if(strncmp((const char *)in, __COMMS_RF_SWITCH_CMD, cmd_hdr_len) != 0){
-    return;
-  }
-
-  /*
-   * Perform a second search now, based on the commands IDs.
-   * Due to the space harmful environment do not be so strict
-   * and accept the command if one of the ID integers are correct.
-   */
-  id_ptr = in + cmd_hdr_len;
-  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
-    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_ON_CMD[i]);
-  }
-
-  if(flag){
-
-  }
-
-  /*
-   * The previous command was not for switching on the RF. Perhaps it is for
-   * shutting it down
-   */
-  flag = 0;
-  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
-    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_OFF_CMD[i]);
-  }
-
-  if(flag) {
-
-  }
-
 }
 
 

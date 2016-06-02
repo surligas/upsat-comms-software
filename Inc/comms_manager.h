@@ -30,6 +30,9 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 int32_t
 send_payload(const uint8_t *in, size_t len, size_t timeout_ms);
 
+uint8_t
+is_tx_enabled();
+
 void
 comms_init();
 
