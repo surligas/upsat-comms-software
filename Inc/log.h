@@ -34,22 +34,22 @@ extern uint8_t dbg_msg;
 
 #if COMMS_UART_DEST_OBC
 #define LOG_UART_DBG(huart, M, ...)					\
-	if(dbg_msg == 1 || dbg_msg == 2) \
+	if(dbg_msg == 1 || dbg_msg == 2) { \
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN,			\
 			"[DEBUG] %s:%d: " M "\n",			\
 			 __FILE__, __LINE__, ##__VA_ARGS__);		\
       event_dbg_api (_ecss_dbg_buffer, _log_uart_buffer,		\
                          &_ecss_dbg_buffer_len);	\
-      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
+      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	} \
 
 #define LOG_UART_ERROR(huart, M, ...) 					\
-	if(dbg_msg == 1 || dbg_msg == 2) \
+	if(dbg_msg == 1 || dbg_msg == 2) {\
 	snprintf(_log_uart_buffer, COMMS_UART_BUF_LEN, 			\
 			"[ERROR] %s:%d: " M "\n",			\
 			 __FILE__, __LINE__, ##__VA_ARGS__);		\
       event_dbg_api (_ecss_dbg_buffer, _log_uart_buffer, \
       	&_ecss_dbg_buffer_len);		\
-      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	\
+      HAL_uart_tx (DBG_APP_ID, _ecss_dbg_buffer, _ecss_dbg_buffer_len);	}\
 
 #else
 

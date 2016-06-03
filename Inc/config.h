@@ -29,9 +29,9 @@ static const char __UPSAT_DEST_CALLSIGN[] = "ABCD";
 static const uint8_t __UPSAT_DEST_SSID = 0;
 static const char __COMMS_RF_SWITCH_CMD[] = "RF SW CMD";
 static const uint32_t __COMMS_RF_SWITCH_ON_CMD[] =
-    {0xa94249da, 0xa7a45d61, 0x413981b, 0xa94ee2d3};
+    {0xda4942a9, 0xa7a45d61, 0x413981b, 0xa94ee2d3};
 static const uint32_t __COMMS_RF_SWITCH_OFF_CMD[] =
-  { 0xdf553d59, 0x4d2f84c0, 0x24d60191, 0x9287b5fd };
+  { 0x593d55df, 0x4d2f84c0, 0x24d60191, 0x9287b5fd };
 
 
 /**

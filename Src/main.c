@@ -167,11 +167,13 @@ int main(void)
 
   /*Must use this in order the compiler occupies flash sector 3*/
   flash_INIT();
+  
+  uint32_t add_read = flash_read_trasmit();
 
   HAL_Delay (4000);
 
   comms_init();
-  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
+  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
   HAL_Delay (100);
 
@@ -227,7 +229,7 @@ int main(void)
     /*--------------RX------------*/
 
     memset(aRxBuffer, 0, 255);
-    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS);
+    ret = recv_payload(aRxBuffer, 255, 100);
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }
@@ -239,11 +241,12 @@ int main(void)
     }
 
     /*------------TEMP------------*/
-    HAL_Delay (10);
-    float res = update_adt7420 ();
-    LOG_UART_DBG(&huart5, "TEMP %f\n", res);
-
     HAL_Delay (100);
+    float res = update_adt7420 ();
+    LOG_UART_DBG(&huart5, "TEMP %0.3f\n", res);
+
+    large_data_IDLE();
+    //HAL_Delay (100);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
