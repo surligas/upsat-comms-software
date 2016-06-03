@@ -46,6 +46,7 @@
 #include "pkt_pool.h"
 #include "service_utilities.h"
 #include "comms_manager.h"
+#include "sensors.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -83,6 +84,8 @@ volatile uint8_t rx_sync_flag = 0;
 volatile uint8_t rx_finished_flag = 0;
 volatile uint8_t rx_thr_flag = 0;
 
+uint8_t dbg_msg = 0;
+
 uint8_t uart_temp[200];
 /* USER CODE END PV */
 
@@ -102,25 +105,6 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-SAT_returnState tx_test(tc_tm_pkt *pkt) {
-
-    int ret = 0;
-    
-    uint16_t size = 0;
-    SAT_returnState res;    
-
-    pack_pkt(payload, pkt, &size);
-
-    //if(!C_ASSERT(size > 0) == true) { return SATR_ERROR; }
-
-    if (ret > 0) {
-      HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
-    }
-    else {
-      LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
-    }
-}
 
 static inline void
 debug_ecss()
@@ -181,13 +165,19 @@ int main(void)
   HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET); //PIN36 2RESETN
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET); //PIN36 2CSN
 
+  /*Must use this in order the compiler occupies flash sector 3*/
+  flash_INIT();
+  
+  uint32_t add_read = flash_read_trasmit();
+
   HAL_Delay (4000);
 
   comms_init();
-  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
+  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
   HAL_Delay (100);
 
+  init_adt7420 ();
 
   pkt_pool_INIT ();
 
@@ -213,32 +203,33 @@ int main(void)
 
     HAL_Delay (300);
 
-    debug_ecss();
+    //debug_ecss();
 
     /*--------------TX------------*/
-
-    /* Send a dummy message towards earth */
-    ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
-    ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
-    HAL_Delay (50);
-    if (ret > 0) {
+    if(dbg_msg == 2) 
+    {
+      /* Send a dummy message towards earth */
+      ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
+          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
+          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
+          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
+          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
+      ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
+      if (ret > 0) {
+        HAL_Delay (50);
+        LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
+      }
+      else {
+        LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
+      }
+      loop++;
     }
-    else {
-      LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
-    }
-    loop++;
-
 
     /*--------------RX------------*/
 
     memset(aRxBuffer, 0, 255);
-    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS);
+    ret = recv_payload(aRxBuffer, 255, 100);
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }
@@ -246,9 +237,16 @@ int main(void)
       LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "RX Msg OK: %s", aRxBuffer);
+      rx_ecss(aRxBuffer, ret);
     }
 
+    /*------------TEMP------------*/
     HAL_Delay (100);
+    float res = update_adt7420 ();
+    LOG_UART_DBG(&huart5, "TEMP %0.3f\n", res);
+
+    large_data_IDLE();
+    //HAL_Delay (100);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

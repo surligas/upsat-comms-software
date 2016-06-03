@@ -76,7 +76,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
   uint32_t i;
   uint8_t flag = 0;
   uint32_t *id_ptr;
-  uint32_t cmd_hdr_len = sizeof(__COMMS_RF_SWITCH_CMD);
+  uint32_t cmd_hdr_len = strnlen(__COMMS_RF_SWITCH_CMD, 15); // Fix max len
   uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
 
   /* Due to length restrictions, this is definitely not an RF switch command */
