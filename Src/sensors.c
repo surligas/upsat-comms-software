@@ -64,11 +64,11 @@ update_adt7420 ()
 
   temp_sensor.temp_raw = msb << 8;
   temp_sensor.temp_raw |= lsb;
-  if ((temp_sensor.temp_raw >> 15 & 1) == 0) {
-    temp_sensor.temp_c = (float) (temp_sensor.temp_raw / 128);
+  if ((temp_sensor.temp_raw >> 15 & 0x1) == 0) {
+    temp_sensor.temp_c = (float) temp_sensor.temp_raw / 128.0;
   }
   else {
-    temp_sensor.temp_c = (float) (temp_sensor.temp_raw - 65536) / 128;
+    temp_sensor.temp_c = ((float) (temp_sensor.temp_raw) - 65536) / 128.0;
   }
   temp_sensor.timestamp = HAL_GetTick();
 
