@@ -42,4 +42,7 @@ get_temp_adt7420 ();
 uint32_t
 get_timestamp_adt7420 ();
 
+int32_t
+cc1120_tx_get_temp(int8_t *temperature, uint32_t timeout_ms);
+
 #endif

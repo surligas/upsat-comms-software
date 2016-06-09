@@ -1,7 +1,11 @@
 #include "sensors.h"
 #include "stm32f4xx_hal.h"
+#include "cc112x_spi.h"
+#include "status.h"
+#include <math.h>
 
 extern I2C_HandleTypeDef hi2c1;
+static uint8_t tmp_buf[256];
 
 struct _temp_sensor
 {
@@ -91,4 +95,80 @@ uint32_t
 get_timestamp_adt7420 ()
 {
     return temp_sensor.timestamp;
+}
+
+int32_t
+cc1120_tx_get_temp(int8_t *temperature, uint32_t timeout_ms)
+{
+  uint8_t reg_val;
+  uint8_t timeout = 1;
+  uint32_t start_tick;
+  uint32_t adc_val = 0x0;
+  /* String to put radio in debug mode */
+  uint8_t tx_buf[18] =
+    { 0x0F, 0x28, 0x02, 0x90, 0x42, 0x1B, 0x7E, 0x1F, 0xFE, 0xCD, 0x06, 0x1B,
+	0x0E, 0xA1, 0x0E, 0xA4, 0x00, 0x3F };
+  /* Constants for temperature calculation */
+  const float a = -3.3;
+  const float b = 992;
+  const float c = -2629.9;
+
+  /* Perform the proper configuration of the CC1120 for temperature reading */
+  cc_tx_wr_reg(DCFILT_CFG, 0x40);
+  cc_tx_wr_reg(MDMCFG1, 0x47);
+  cc_tx_wr_reg(CHAN_BW, 0x81);
+  cc_tx_wr_reg(FREQ_IF_CFG, 0x0);
+  cc_tx_wr_reg(ATEST, 0x2A);
+  cc_tx_wr_reg(ATEST_MODE, 0x07);
+  cc_tx_wr_reg(GBIAS1, 0x07);
+  cc_tx_wr_reg(PA_IFAMP_TEST, 0x01);
+
+  /* Set the CC1120 in RX mode */
+  cc_tx_cmd(SRX);
+
+  /* Check whenever the chip got in RX mode */
+  start_tick = HAL_GetTick();
+  while(HAL_GetTick() - start_tick < timeout_ms){
+    cc_tx_rd_reg(MARCSTATE, &reg_val);
+    if(reg_val == 0x6D){
+      timeout = 0;
+      break;
+    }
+  }
+
+  if(timeout){
+    return COMMS_STATUS_TIMEOUT;
+  }
+
+  /* Set the chip in debug Mode */
+  cc_tx_spi_write_fifo(tx_buf, tmp_buf, sizeof(tx_buf));
+  cc_tx_wr_reg(BIST, 0x1);
+  cc_tx_cmd(SIDLE);
+  cc_tx_wr_reg(WOR_EVENT0_LSB, 0x1F);
+  cc_tx_cmd(SXOFF);
+
+  /* Check whenever the data from the channel filter are valid */
+  start_tick = HAL_GetTick();
+  timeout = 1;
+  while(HAL_GetTick() - start_tick < timeout_ms){
+    cc_tx_rd_reg(CHFILT_I2, &reg_val);
+    if(reg_val & 0x8){
+      timeout = 0;
+      break;
+    }
+  }
+
+  if(timeout){
+    return COMMS_STATUS_TIMEOUT;
+  }
+  cc_tx_rd_reg(CHFILT_I2, &reg_val);
+  adc_val = ((uint32_t)reg_val) << 16;
+  cc_tx_rd_reg(CHFILT_I1, &reg_val);
+  adc_val |= (((uint32_t)reg_val) << 8) & 0x0000FF00;
+  cc_tx_rd_reg(CHFILT_I0, &reg_val);
+  adc_val |= ((uint32_t)reg_val) & 0xFF;
+
+  *temperature = (int8_t) ((-b
+      + sqrtf (powf (b, 2.0f) - (4.0 * a * (c - adc_val)))) / (2.0 * a));
+  return COMMS_STATUS_OK;
 }
