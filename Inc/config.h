@@ -33,6 +33,26 @@ static const uint32_t __COMMS_RF_SWITCH_ON_CMD[] =
 static const uint32_t __COMMS_RF_SWITCH_OFF_CMD[] =
   { 0x593d55df, 0x4d2f84c0, 0x24d60191, 0x9287b5fd };
 
+/**
+ * A key indicating that the TX RF of the COMMS is on.
+ *
+ * We use a random generated key instead of a just a
+ * boolean value to be sure that even if some bits of the
+ * flash memory are destroyed, the system can recover and
+ * properly identify the state of the TX RF.
+ */
+static const uint32_t __COMMS_RF_ON_KEY = 0x16264e84;
+
+/**
+ * A key indicating that the TX RF of the COMMS is OFF.
+ *
+ * We use a random generated key instead of a just a
+ * boolean value to be sure that even if some bits of the
+ * flash memory are destroyed, the system can recover and
+ * properly identify the state of the TX RF.
+ */
+static const uint32_t __COMMS_RF_OFF_KEY = 0x669d93a3;
+
 
 /**
  * Enables/disables the UART debug

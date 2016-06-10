@@ -32,19 +32,19 @@ static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
 static inline void
 rf_tx_shutdown()
 {
-  comms_write_persistent_word(0x0);
+  comms_write_persistent_word(__COMMS_RF_OFF_KEY);
 }
 
 static inline void
 rf_tx_enable()
 {
-  comms_write_persistent_word(0xFFFFFFFF);
+  comms_write_persistent_word(__COMMS_RF_ON_KEY);
 }
 
 /**
  * Checks if the TX is enabled or not.
  * For robustness, this routine does not check the flash value for equality.
- * Instead, it counts the 1-bits and if the number is greater than 16 the
+ * Instead, it counts the number of same bits and if the number is greater than 16 the
  * stored value is considered as true. Otherwise, false.
  * @return 0 if the TX is disabled, 1 if it is enabled
  */
@@ -55,8 +55,8 @@ is_tx_enabled()
   uint32_t val;
 
   val = comms_read_persistent_word();
-  cnt = bit_count(val);
-  if(val > 16) {
+  cnt = bit_count(val ^ __COMMS_RF_ON_KEY);
+  if(cnt < 16) {
     return 1;
   }
   return 0;

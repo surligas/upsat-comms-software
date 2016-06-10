@@ -170,5 +170,8 @@ cc1120_tx_get_temp(int8_t *temperature, uint32_t timeout_ms)
 
   *temperature = (int8_t) ((-b
       + sqrtf (powf (b, 2.0f) - (4.0 * a * (c - adc_val)))) / (2.0 * a));
+
+  /* Reset the Radio at the initial setup again */
+  tx_registerConfig();
   return COMMS_STATUS_OK;
 }
