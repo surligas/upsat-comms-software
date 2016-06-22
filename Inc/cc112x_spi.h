@@ -42,6 +42,8 @@ cc_tx_cmd (uint8_t CMDStrobe);
 
 HAL_StatusTypeDef
 cc_rx_spi_read_fifo(uint8_t *out, size_t len);
+HAL_StatusTypeDef
+cc_rx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len);
 uint8_t
 cc_rx_rd_reg (uint16_t add, uint8_t *data);
 uint8_t

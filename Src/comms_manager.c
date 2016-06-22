@@ -24,17 +24,34 @@
 #include "cc_rx_init.h"
 #include "persistent_mem.h"
 #include "utils.h"
+#include "log.h"
+#include "services.h"
+#include "pkt_pool.h"
+#include "service_utilities.h"
+#include "comms.h"
+#include "verification_service.h"
+
+#undef __FILE_ID__
+#define __FILE_ID__ 25
 
 static uint8_t interm_buf[AX25_MAX_FRAME_LEN + 2];
 static uint8_t spi_buf[AX25_MAX_FRAME_LEN + 2];
 static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
 
+extern UART_HandleTypeDef huart5;
+
+/**
+ * Disables the TX RF
+ */
 static inline void
 rf_tx_shutdown()
 {
   comms_write_persistent_word(__COMMS_RF_OFF_KEY);
 }
 
+/**
+ * Enables the TX RF
+ */
 static inline void
 rf_tx_enable()
 {
@@ -76,7 +93,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
   uint32_t i;
   uint8_t flag = 0;
   uint32_t *id_ptr;
-  uint32_t cmd_hdr_len = strnlen(__COMMS_RF_SWITCH_CMD, 15); // Fix max len
+  uint32_t cmd_hdr_len = strlen(__COMMS_RF_SWITCH_CMD);
   uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
 
   /* Due to length restrictions, this is definitely not an RF switch command */
@@ -123,6 +140,33 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
     return 1;
   }
   return 0;
+}
+
+static inline int32_t
+handle_ecss_payload(const uint8_t *payload, size_t len)
+{
+  SAT_returnState ret;
+  tc_tm_pkt *pkt;
+
+  pkt = get_pkt (len);
+
+  if (!C_ASSERT(pkt != NULL) == true) {
+    return COMMS_STATUS_NO_DATA;
+  }
+
+  /*
+   * Proceed with the ECSS packet processing
+   */
+  if (unpack_pkt (payload, pkt, len) == SATR_OK) {
+    /* Check if the received ECSS is a part of a large data transfer */
+
+    ret = route_pkt (pkt);
+  }
+  else {
+    verification_app (pkt);
+    ret = free_pkt (pkt);
+  }
+  return ret;
 }
 
 /**
@@ -236,7 +280,7 @@ comms_init ()
   cc_tx_rd_reg (0x2f8F, &cc_id_tx);
 
   //Configure RX CC1120
-  rx_registerConfig ();
+  rx_register_config ();
 
   HAL_Delay (10);
   cc_rx_rd_reg (0x2f8F, &cc_id_rx);
@@ -247,7 +291,7 @@ comms_init ()
   cc_tx_rd_reg (0x2f8F, &cc_id_tx);
 
   //Calibrate RX
-  rx_manualCalibration ();
+  rx_manual_calibration ();
 
   cc_rx_rd_reg (0x2f8F, &cc_id_tx);
 }

@@ -297,6 +297,25 @@ cc_rx_rd_reg (uint16_t add, uint8_t *data)
   return temp_RxBuffer[0];
 }
 
+/**
+ * Write to the RX FIFO \p len bytes using the SPI bus
+ * @param data the input buffer containing the data
+ * @param spi_rx_data the SPI buffer for the return bytes
+ * @param len the number of bytes to be sent
+ * @return 0 on success of HAL_StatusTypeDef appropriate error code
+ */
+HAL_StatusTypeDef
+cc_rx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len)
+{
+  HAL_StatusTypeDef ret;
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  delay_us(4);
+  ret = HAL_SPI_TransmitReceive (&hspi2, data, spi_rx_data, len,
+				 COMMS_DEFAULT_TIMEOUT_MS);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+  return ret;
+}
+
 uint8_t
 cc_rx_wr_reg (uint16_t add, uint8_t data)
 {
@@ -325,7 +344,7 @@ cc_rx_wr_reg (uint16_t add, uint8_t data)
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
   delay_us(20);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
-			   len, 5000);
+			   len, COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
   return aRxBuffer[0];

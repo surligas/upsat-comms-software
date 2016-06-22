@@ -64,7 +64,7 @@ static const uint32_t __COMMS_RF_OFF_KEY = 0x669d93a3;
  * If set to 1, the UART target is the OBC. If set to 0, the UART target
  * is the FTDI debugging dongle
  */
-#define COMMS_UART_DEST_OBC 1
+#define COMMS_UART_DEST_OBC 0
 /**
  * The default time out period is 4 seconds
  */

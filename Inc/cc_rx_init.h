@@ -25,9 +25,11 @@
 #include <stdint.h>
 
 void
-rx_manualCalibration ();
+rx_manual_calibration ();
 void
-rx_registerConfig ();
+rx_register_config ();
+void
+rx_temp_sensor_register_config ();
 
 #endif /* INC_CC_RX_INIT_H_ */
 

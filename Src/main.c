@@ -134,6 +134,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int ret = 0;
+  int8_t temp;
   uint8_t rst_src;
   /* USER CODE END 1 */
 
@@ -206,7 +207,7 @@ int main(void)
     //debug_ecss();
 
     /*--------------TX------------*/
-    if(dbg_msg == 2) 
+    if(dbg_msg == 0)
     {
       /* Send a dummy message towards earth */
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
@@ -237,13 +238,16 @@ int main(void)
       LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "RX Msg OK: %s", aRxBuffer);
-      rx_ecss(aRxBuffer, ret);
+      ret = rx_ecss(aRxBuffer, ret);
+      if(ret == SATR_OK){
+	LOG_UART_DBG(&huart5, "ECSS Valid");
+      }
+      else{
+	LOG_UART_DBG(&huart5, "Invalid ECSS. Error %d", ret);
+      }
     }
 
     /*------------TEMP------------*/
-    HAL_Delay (100);
-    float res = update_adt7420 ();
-    LOG_UART_DBG(&huart5, "TEMP %0.3f\n", res);
 
     large_data_IDLE();
     //HAL_Delay (100);
