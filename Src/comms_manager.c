@@ -190,7 +190,7 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   }
 
   memset(spi_buf, 0, sizeof(spi_buf));
-  ret = rx_data(interm_buf, len, spi_buf, timeout_ms);
+  ret = rx_data_continuous(interm_buf, len, timeout_ms);
   if(ret < 1){
     return ret;
   }
@@ -294,4 +294,7 @@ comms_init ()
   rx_manual_calibration ();
 
   cc_rx_rd_reg (0x2f8F, &cc_id_tx);
+
+  /* Initialize the TX and RX routines */
+  rx_init();
 }

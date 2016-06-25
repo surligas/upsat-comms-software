@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "utils.h"
 #include "config.h"
+#include "scrambler.h"
 #include <limits.h>
 #include <stddef.h>
 #include <string.h>
@@ -35,13 +36,7 @@
 #define AX25_MAX_CTRL_LEN 2
 #define AX25_CALLSIGN_MAX_LEN 6
 #define AX25_CALLSIGN_MIN_LEN 2
-/**
- * Due to the AX25 encapsulation the maximum payload is restricted by
- * the AX.25 headers, the leading and trailing SYNC flag and bit stuffing
- * the actual payload is reduced to 210. This covers the worst case scenario
- * where all the payload bytes need bit stuffing.
- */
-#define COMMS_MAX_PAYLOAD_LEN 210
+#define AX25_PREAMBLE_LEN 128
 
 /**
  * AX.25 Frame types
@@ -61,6 +56,7 @@ typedef enum
 
 typedef enum
 {
+  AX25_DEC_NOT_READY = -56,
   AX25_DEC_CRC_FAIL = -55,
   AX25_DEC_SIZE_ERROR = -54,
   AX25_DEC_STOP_SYNC_NOT_FOUND = -53,
@@ -80,6 +76,15 @@ typedef struct
   size_t info_len;
   ax25_frame_type_t type;
 } ax25_frame_t;
+
+typedef struct
+{
+  uint8_t in_frame;
+  size_t decoded_num;
+  uint8_t shift_reg;
+  uint8_t bit_cnt;
+  scrambler_handle_t descrambler;
+} ax25_handle_t;
 
 
 uint16_t
@@ -103,14 +108,15 @@ ax25_nrz_bit_stuffing (float *out, size_t *out_len, const uint8_t *buffer,
 		       const size_t buffer_len);
 
 ax25_decode_status_t
-ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
-	     size_t len);
+ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
+	     const uint8_t *ax25_frame, size_t len);
 
 int32_t
 ax25_send(uint8_t *out, const uint8_t *in, size_t len);
 
 int32_t
-ax25_recv(uint8_t *out, const uint8_t *in, size_t len);
+ax25_recv(ax25_handle_t *h, uint8_t *out, size_t *out_len, const uint8_t *in,
+	  size_t len);
 
 uint8_t
 ax25_check_dest_callsign (const uint8_t *ax25_frame, size_t frame_len,
@@ -119,5 +125,11 @@ ax25_check_dest_callsign (const uint8_t *ax25_frame, size_t frame_len,
 int32_t
 ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
 		     size_t addr_len, size_t ctrl_len);
+
+int32_t
+ax25_rx_init(ax25_handle_t *h);
+
+int32_t
+ax25_rx_reset(ax25_handle_t *h);
 
 #endif

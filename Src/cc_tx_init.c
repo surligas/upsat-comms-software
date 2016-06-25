@@ -59,9 +59,10 @@ static const registerSetting_t TX_preferredSettings[]=
 		{SYNC1,              0x7A},
 		{SYNC0,              0x0E},
 		{SYNC_CFG1,          0x0B},
-		{SYNC_CFG0,          0x0B},
+		{SYNC_CFG0,          0x03},
 		{DCFILT_CFG,         0x1C},
-		{PREAMBLE_CFG1,      0x22},
+		{PREAMBLE_CFG1,     0x00}, /* No preamble*/
+		{PREAMBLE_CFG0,     0x0A}, /* No preamble*/
 		{IQIC,               0xC6},
 		{CHAN_BW,            0x08},
 		{MDMCFG0,            0x05},

@@ -23,7 +23,7 @@
 #include "status.h"
 
 
-static uint8_t tmp_buf[2 * AX25_MAX_FRAME_LEN];
+static uint8_t tmp_buf[AX25_PREAMBLE_LEN + 2 * AX25_MAX_FRAME_LEN];
 
 /**
  * This routine sends the data using the AX.25 encapsulation
@@ -43,7 +43,7 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
     return COMMS_STATUS_NO_DATA;
   }
 
-  if(len > COMMS_MAX_PAYLOAD_LEN) {
+  if(len > AX25_MAX_FRAME_LEN) {
     return COMMS_STATUS_BUFFER_OVERFLOW;
   }
 
@@ -54,7 +54,7 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
   }
 
   /* Issue the frame at the CC1120 */
-  ret = cc_tx_data (tmp_buf, ret, dev_rx_buffer, timeout_ms);
+  ret = cc_tx_data_continuous(tmp_buf, ret, dev_rx_buffer, timeout_ms);
   if(ret < 1){
     return ret;
   }

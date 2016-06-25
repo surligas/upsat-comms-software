@@ -53,6 +53,20 @@ static const uint32_t __COMMS_RF_ON_KEY = 0x16264e84;
  */
 static const uint32_t __COMMS_RF_OFF_KEY = 0x669d93a3;
 
+/**
+ * The scrambler polynomial
+ */
+static const uint32_t __SCRAMBLER_POLY = 0x21;
+
+/**
+ * The initial seed of the scrambler
+ */
+static const uint32_t __SCRAMBLER_SEED = 0x00;
+
+/**
+ * The order of the LFSR that the scrambler will use
+ */
+static const uint32_t __SCRAMBLER_ORDER = 16;
 
 /**
  * Enables/disables the UART debug
