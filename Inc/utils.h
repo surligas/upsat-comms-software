@@ -178,7 +178,7 @@ reverse_uint32_bytes (uint32_t i)
 }
 
 static inline uint8_t
-min(uint8_t x, uint8_t y)
+min(uint32_t x, uint32_t y)
 {
   return x < y ? x : y;
 }

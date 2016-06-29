@@ -71,6 +71,7 @@ is_tx_enabled()
   uint32_t cnt;
   uint32_t val;
 
+  rf_tx_enable();
   val = comms_read_persistent_word();
   cnt = bit_count(val ^ __COMMS_RF_ON_KEY);
   if(cnt < 16) {

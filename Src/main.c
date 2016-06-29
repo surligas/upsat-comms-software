@@ -133,7 +133,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  int ret = 0;
+  int32_t ret = 0;
   int8_t temp;
   uint8_t rst_src;
   /* USER CODE END 1 */
@@ -209,10 +209,10 @@ int main(void)
     {
       /* Send a dummy message towards earth */
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
-          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
-          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
-          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
-          "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
+          "HELLO WORLD FROM UPSAT 0 "
+		      "HELLO WORLD FROM UPSAT 1"
+		      "loop %d", loop);
+
       ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
       if (ret > 0) {
@@ -228,7 +228,7 @@ int main(void)
     /*--------------RX------------*/
 
     memset(aRxBuffer, 0, 255);
-    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS );
+    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS * 2 );
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }
@@ -275,7 +275,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 6;
-  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLN = 84;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
@@ -284,9 +284,9 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
-  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5);
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
 
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
@@ -506,7 +506,7 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
   GPIO_PinState state;
   switch(GPIO_Pin){
     case GPIO_PIN_3:
-      tx_fin_flag = 1;
+      tx_thr_flag = 1;
       break;
     case GPIO_PIN_2:
       tx_thr_flag = 1;

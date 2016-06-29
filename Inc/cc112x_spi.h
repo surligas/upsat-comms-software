@@ -34,12 +34,12 @@ cc_tx_rd_reg (uint16_t add, uint8_t *data);
 uint8_t
 cc_tx_wr_reg (uint16_t add, uint8_t data);
 HAL_StatusTypeDef
-cc_tx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len);
+cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len);
 int32_t
 cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 	    size_t timeout_ms);
 int32_t
-cc_tx_data_continuous (const uint8_t *data, uint8_t size, uint8_t *rec_data,
+cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 		       size_t timeout_ms);
 uint8_t
 cc_tx_cmd (uint8_t CMDStrobe);

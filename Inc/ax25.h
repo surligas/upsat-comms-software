@@ -36,7 +36,8 @@
 #define AX25_MAX_CTRL_LEN 2
 #define AX25_CALLSIGN_MAX_LEN 6
 #define AX25_CALLSIGN_MIN_LEN 2
-#define AX25_PREAMBLE_LEN 128
+#define AX25_PREAMBLE_LEN 16
+#define AX25_POSTAMBLE_LEN 16
 
 /**
  * AX.25 Frame types

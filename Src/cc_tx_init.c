@@ -17,23 +17,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*# Modulation format = 2-FSK 
-# Whitening = true 
-# Bit rate = 9.6 
-# Device address = 0 
-# Packet length = 3 
-# Performance mode = High Performance 
-# Packet bit length = 0 
-# PA ramping = true 
-# Carrier frequency = 435.800049 
-# Deviation = 3.997803 
-# Manchester enable = false 
-# Address config = No address check 
-# TX power = 15 
-# Packet length mode = Fixed 
-# Symbol rate = 9.6 
-# RX filter BW = 25.000000 
- */
 
 /*
  * Rf settings for CC1120
@@ -51,7 +34,7 @@ typedef struct
 static const registerSetting_t TX_preferredSettings[]=
 {
 		{IOCFG3,             0x02},
-		{IOCFG2,             0x06},
+		{IOCFG2,             0x02},
 		{IOCFG1,             0xB0},
 		{IOCFG0,             0x40},
 		{SYNC3,              0x00},
@@ -59,10 +42,10 @@ static const registerSetting_t TX_preferredSettings[]=
 		{SYNC1,              0x7A},
 		{SYNC0,              0x0E},
 		{SYNC_CFG1,          0x0B},
-		{SYNC_CFG0,          0x03},
+		{SYNC_CFG0,          0x03}, /* No SYNC word. It is generated on the MPU and handled manually */
 		{DCFILT_CFG,         0x1C},
-		{PREAMBLE_CFG1,     0x00}, /* No preamble*/
-		{PREAMBLE_CFG0,     0x0A}, /* No preamble*/
+		{PREAMBLE_CFG1,      0x00}, /* No preamble. It is generated on the MPU and handled manually */
+		{PREAMBLE_CFG0,      0x0A}, /* No preamble. It is generated on the MPU and handled manually */
 		{IQIC,               0xC6},
 		{CHAN_BW,            0x08},
 		{MDMCFG0,            0x05},
@@ -73,18 +56,15 @@ static const registerSetting_t TX_preferredSettings[]=
 		{FIFO_CFG,           CC1120_TXFIFO_THR},
 		{SETTLING_CFG,       0x03},
 		{FS_CFG,             0x14},
-		//{PKT_CFG0,           0x28},
-		{PKT_CFG0,           0x20},
-		//{PA_CFG2,            0x2D},
+		{PKT_CFG1,           0x00},
+		{PKT_CFG0,           CC1120_INFINITE_PKT_LEN},
 		{PA_CFG2,            0x2F},  //4-PACFG2 0X26, 6dBm 0x2B 2dbm 0x22,8 DBM 2F
-
 		{PA_CFG0,            0x7D},
 		{PKT_LEN,            0xFF},
 		{IF_MIX_CFG,         0x00},
 		{FREQOFF_CFG,        0x22},
 		{FREQ2,              0x6C},
 		{FREQ1,              0xF3},
-		//{FREQ0,              0x95},
                 {FREQ0,              0x74},
 		{FS_DIG1,            0x00},
 		{FS_DIG0,            0x5F},

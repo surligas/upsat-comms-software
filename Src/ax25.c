@@ -30,8 +30,8 @@
 extern UART_HandleTypeDef huart5;
 
 static const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
-uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_MAX_FRAME_LEN] = {0};
-uint8_t tmp_bit_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
+uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN] = {0};
+uint8_t tmp_bit_buf[(AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN) * 8] = {0};
 uint8_t tmp_buf[AX25_MAX_FRAME_LEN * 2] = {0};
 
 scrambler_handle_t h_scrabler;
@@ -105,12 +105,16 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
 		    uint16_t ctrl, size_t ctrl_len)
 {
   uint16_t fcs;
-  uint16_t i = 1;
+  size_t i;
   if (info_len > AX25_MAX_FRAME_LEN) {
     return 0;
   }
 
-  out[0] = AX25_SYNC_FLAG;
+
+  /* Repeat the AX.25 sync flag a pre-defined number of times */
+  memcpy(out, AX25_SYNC_FLAG, AX25_PREAMBLE_LEN);
+  i = AX25_PREAMBLE_LEN;
+
   /* Insert address and control fields */
   if (addr_len == AX25_MIN_ADDR_LEN || addr_len == AX25_MAX_ADDR_LEN) {
     memcpy (out + i, addr, addr_len);
@@ -139,14 +143,16 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
   memcpy (out + i, info, info_len);
   i += info_len;
 
-  /* Compute the FCS. Ignore the first flag byte */
-  fcs = ax25_fcs (out + 1, i - 1);
-  /* The MS bits are sent first ONLY at the FCS field */
-  out[i++] = (fcs >> 8) & 0xFF;
-  out[i++] = fcs & 0xFF;
-  out[i++] = AX25_SYNC_FLAG;
+  /* Compute the FCS. Ignore the AX.25 preamble */
+  fcs = ax25_fcs (out + AX25_PREAMBLE_LEN, i - AX25_PREAMBLE_LEN);
 
-  return i;
+  /* The MS bits are sent first ONLY at the FCS field */
+  out[i++] = fcs & 0xFF;
+  out[i++] = (fcs >> 8) & 0xFF;
+
+  /* Append the AX.25 postample*/
+  memcpy(out+i, AX25_SYNC_FLAG, AX25_POSTAMBLE_LEN);
+  return i + AX25_POSTAMBLE_LEN;
 }
 
 /**
@@ -179,12 +185,14 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
   size_t i;
 
   /* Leading FLAG field does not need bit stuffing */
-  memcpy (out, AX25_SYNC_FLAG_MAP_BIN, 8 * sizeof(uint8_t));
-  out_idx = 8;
+  for(i = 0; i < AX25_PREAMBLE_LEN; i++){
+    memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8);
+    out_idx += 8;
+  }
 
-  /* Skip the leading and trailing FLAG field */
-  buffer++;
-  for (i = 0; i < 8 * (buffer_len - 2); i++) {
+  /* Skip the AX.25 preamble and postable */
+  buffer += AX25_PREAMBLE_LEN;
+  for (i = 0; i < 8 * (buffer_len - AX25_PREAMBLE_LEN - AX25_POSTAMBLE_LEN); i++) {
     bit = (buffer[i / 8] >> (i % 8)) & 0x1;
     out[out_idx++] = bit;
 
@@ -211,9 +219,11 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
     }
   }
 
-  /* Trailing FLAG field does not need bit stuffing */
-  memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8 * sizeof(uint8_t));
-  out_idx += 8;
+  /*Postamble does not need bit stuffing */
+  for(i = 0; i < AX25_POSTAMBLE_LEN; i++){
+    memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8);
+    out_idx += 8;
+  }
 
   *out_len = out_idx;
   return AX25_ENC_OK;
@@ -232,7 +242,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 
     /* Check for the AX.25 SYNC Flag */
     if(h->shift_reg == AX25_SYNC_FLAG){
-      /*
+     /*
        * If we are already inside a frame and the distance between the SYNC flags
        * is greater than the minimum allowed, then this is the end of the frame
        */
@@ -311,31 +321,40 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
    */
   interm_len = ax25_prepare_frame (interm_send_buf, in, len, AX25_UI_FRAME,
 				   addr_buf, addr_len, __UPSAT_AX25_CTRL, 1);
+  if(interm_len == 0){
+    return -1;
+  }
 
   status = ax25_bit_stuffing(tmp_bit_buf, &ret_len, interm_send_buf, interm_len);
   if( status != AX25_ENC_OK){
     return -1;
   }
 
-  /* Copy in front the repeated AX.25 preamble */
-  memset(interm_send_buf, AX25_SYNC_FLAG, AX25_PREAMBLE_LEN);
-  memset(interm_send_buf + AX25_PREAMBLE_LEN, 0, ret_len/8 * sizeof(uint8_t));
   /* Pack now the bits into full bytes */
+  memset(interm_send_buf, 0, sizeof(interm_send_buf));
   for (i = 0; i < ret_len; i++) {
-    out[i/8 + AX25_PREAMBLE_LEN] |= tmp_bit_buf[i] << (7 - (i % 8));
+    interm_send_buf[i/8] |= tmp_bit_buf[i] << (i % 8);
   }
-  pad_bits = 8 - (ret_len % 8);
+
+  /*Perhaps some padding is needed due to bit stuffing */
+  if(ret_len % 8){
+    pad_bits = 8 - (ret_len % 8);
+  }
   ret_len += pad_bits;
-  out[ret_len/8 + AX25_PREAMBLE_LEN] &= (0xFF << pad_bits);
 
   /* Perform NRZI and scrambling based on the G3RUH polynomial */
   scrambler_init (&h_scrabler, __SCRAMBLER_POLY, __SCRAMBLER_SEED,
 		  __SCRAMBLER_ORDER);
   scrambler_reset(&h_scrabler);
   scramble_data_nrzi(&h_scrabler, out, interm_send_buf,
-		     ret_len/8 + AX25_PREAMBLE_LEN);
+		     ret_len/8);
 
-  return ret_len/8 + AX25_PREAMBLE_LEN;
+  /* AX.25 sends MS bit first*/
+  for(i = 0; i < ret_len/8; i++){
+    out[i] = reverse_byte(out[i]);
+  }
+
+  return ret_len/8;
 }
 
 /**

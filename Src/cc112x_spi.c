@@ -111,7 +111,7 @@ cc_tx_wr_reg (uint16_t add, uint8_t data)
   }
 
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(400);
+  delay_us(4);
   HAL_SPI_TransmitReceive (&hspi1, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
 			   len, 5000); //send and receive 3 bytes
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
@@ -149,12 +149,16 @@ cc_tx_cmd (uint8_t CMDStrobe)
  * @return 0 on success of HAL_StatusTypeDef appropriate error code
  */
 HAL_StatusTypeDef
-cc_tx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len)
+cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
 {
   HAL_StatusTypeDef ret;
+  /* Write the Burst flag at the start of the buffer */
+  tx_frag_buf[0] = BURST_TXFIFO;
+  memcpy(tx_frag_buf + 1, data, len);
+
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   delay_us(4);
-  ret = HAL_SPI_TransmitReceive (&hspi1, data, spi_rx_data, len,
+  ret = HAL_SPI_TransmitReceive (&hspi1, data, spi_rx_data, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
   return ret;
@@ -266,40 +270,44 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
  * @return
  */
 int32_t
-cc_tx_data_continuous (const uint8_t *data, uint8_t size, uint8_t *rec_data,
+cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 		       size_t timeout_ms)
 {
-  uint8_t gone = 0;
-  uint8_t in_fifo = 0;
-  uint8_t issue_len;
-  uint8_t processed;
+  size_t gone = 0;
+  size_t in_fifo = 0;
+  size_t issue_len;
+  size_t processed;
   uint8_t first_burst = 1;
   uint32_t start_tick;
-  uint8_t part_len;
+  uint8_t mode = CC1120_INFINITE_PKT_LEN;
+  uint8_t tmp;
+  uint8_t timeout;
 
+  cc_tx_cmd (SFTX);
   /* Reset the packet transmitted flag */
   tx_fin_flag = 0;
 
-  part_len = (uint8_t) (size % CC1120_TX_MAX_FRAME_LEN);
-  /* Pre-program the fixed length register */
-  cc_tx_wr_reg(PKT_LEN, part_len);
+  /* Set the TX into infinite packet length mode */
+  cc_tx_wr_reg(PKT_CFG0, CC1120_INFINITE_PKT_LEN);
 
+  /* The clock is ticking... */
   start_tick = HAL_GetTick ();
   while( gone + in_fifo < size) {
+    /* Reset the FIFO interrupt flag */
     tx_thr_flag = 0;
+
     if(first_burst){
       first_burst = 0;
       issue_len = min(CC1120_TX_FIFO_SIZE, size);
-      tx_frag_buf[0] = BURST_TXFIFO;
-      memcpy(tx_frag_buf + 1, data, issue_len);
-      cc_tx_spi_write_fifo (tx_frag_buf, rec_data, issue_len + 1);
+      cc_tx_spi_write_fifo (data, rec_data, issue_len);
+
+      /* Start the TX procedure */
+      delay_us(1000);
       cc_tx_cmd (STX);
     }
     else{
       issue_len = min(CC1120_TXFIFO_IRQ_THR, size - gone - in_fifo);
-      tx_frag_buf[0] = BURST_TXFIFO;
-      memcpy(tx_frag_buf + 1, data + gone + in_fifo, issue_len);
-      cc_tx_spi_write_fifo(tx_frag_buf, rec_data, issue_len + 1);
+      cc_tx_spi_write_fifo (data + gone + in_fifo, rec_data, issue_len);
     }
 
     /* Track the number of bytes in the TX FIFO*/
@@ -307,16 +315,20 @@ cc_tx_data_continuous (const uint8_t *data, uint8_t size, uint8_t *rec_data,
 
     /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
     if (in_fifo >= CC1120_TXFIFO_IRQ_THR && size != issue_len) {
+      timeout = 1;
       while (HAL_GetTick () - start_tick < timeout_ms) {
-	if (tx_thr_flag) {
-	  break;
-	}
+        cc_tx_rd_reg(NUM_TXBYTES, &tmp);
+        if (tmp < CC1120_TXFIFO_IRQ_THR) {
+          timeout = 0;
+          break;
+        }
       }
 
       /* Timeout occurred. Abort */
-      if (!tx_thr_flag) {
+      if (timeout) {
+	delay_us(1000);
 	cc_tx_cmd (SFTX);
-	return COMMS_STATUS_TIMEOUT;
+	return COMMS_STATUS_TIMEOUT - 50;
       }
 
       processed = in_fifo - CC1120_TXFIFO_IRQ_THR + 1;
@@ -327,17 +339,27 @@ cc_tx_data_continuous (const uint8_t *data, uint8_t size, uint8_t *rec_data,
       gone += issue_len;
       in_fifo -= issue_len;
     }
-
-    /* Switch to fixed pacekt mode if the remaining data are less */
   }
 
   /* Wait the FIFO to empty */
-  while(HAL_GetTick() - start_tick < timeout_ms) {
-    if (tx_fin_flag) {
+  timeout = 1;
+  while (HAL_GetTick () - start_tick < timeout_ms) {
+    cc_tx_rd_reg(NUM_TXBYTES, &tmp);
+    if (tmp == 0) {
+      timeout = 0;
       break;
     }
   }
 
+  /* Timeout occurred. Abort */
+  if (timeout) {
+    delay_us(1000);
+    cc_tx_cmd (SFTX);
+    return COMMS_STATUS_TIMEOUT - 100;
+  }
+
+  /* If you change this, you deserve to die trying to debug... */
+  delay_us(1000);
   cc_tx_cmd (SFTX);
   return gone + in_fifo;
 }
@@ -371,11 +393,11 @@ cc_rx_rd_reg (uint16_t add, uint8_t *data)
   }
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(10);
+  delay_us(4);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) temp_TxBuffer,
 			   (uint8_t *) temp_RxBuffer, len, 5000);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-  delay_us(10);
+  delay_us(4);
   *data = temp_RxBuffer[len - 1];
 
   return temp_RxBuffer[0];
