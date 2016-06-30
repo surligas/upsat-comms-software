@@ -158,7 +158,7 @@ cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
 
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   delay_us(4);
-  ret = HAL_SPI_TransmitReceive (&hspi1, data, spi_rx_data, len + 1,
+  ret = HAL_SPI_TransmitReceive (&hspi1, tx_frag_buf, spi_rx_data, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
   return ret;
@@ -273,22 +273,32 @@ int32_t
 cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 		       size_t timeout_ms)
 {
+  size_t bytes_left = size;
   size_t gone = 0;
   size_t in_fifo = 0;
   size_t issue_len;
   size_t processed;
   uint8_t first_burst = 1;
   uint32_t start_tick;
-  uint8_t mode = CC1120_INFINITE_PKT_LEN;
-  uint8_t tmp;
+  uint8_t mode;
   uint8_t timeout;
+  uint8_t tmp;
 
-  cc_tx_cmd (SFTX);
   /* Reset the packet transmitted flag */
   tx_fin_flag = 0;
 
-  /* Set the TX into infinite packet length mode */
-  cc_tx_wr_reg(PKT_CFG0, CC1120_INFINITE_PKT_LEN);
+  /* Set the TX into infinite packet length mode only if the frame is
+   * larger than the maximum CC1120 allowed frame
+   */
+  if(size > CC1120_TX_MAX_FRAME_LEN){
+    mode = CC1120_INFINITE_PKT_LEN;
+  }
+  else{
+    mode = CC1120_FIXED_PKT_LEN;
+  }
+  cc_tx_wr_reg(PKT_CFG0, mode);
+  /* Pre-program the packet length register */
+  cc_tx_wr_reg(PKT_LEN, size % (CC1120_TX_MAX_FRAME_LEN + 1));
 
   /* The clock is ticking... */
   start_tick = HAL_GetTick ();
@@ -302,23 +312,33 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
       cc_tx_spi_write_fifo (data, rec_data, issue_len);
 
       /* Start the TX procedure */
-      delay_us(1000);
       cc_tx_cmd (STX);
     }
     else{
-      issue_len = min(CC1120_TXFIFO_IRQ_THR, size - gone - in_fifo);
+      issue_len = min(CC1120_TXFIFO_AVAILABLE_BYTES, size - gone - in_fifo);
       cc_tx_spi_write_fifo (data + gone + in_fifo, rec_data, issue_len);
     }
+    bytes_left -= issue_len;
 
     /* Track the number of bytes in the TX FIFO*/
     in_fifo += issue_len;
 
+    /*
+     * If the remaining bytes are less than the maximum frame size switch to
+     * fixed packet length mode
+     */
+    if (bytes_left < ((CC1120_TX_MAX_FRAME_LEN + 1) - in_fifo)
+	&& (mode == CC1120_INFINITE_PKT_LEN) ) {
+      cc_tx_wr_reg(PKT_CFG0, CC1120_FIXED_PKT_LEN);
+      mode = CC1120_FIXED_PKT_LEN;
+    }
+
     /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
-    if (in_fifo >= CC1120_TXFIFO_IRQ_THR && size != issue_len) {
+    if (in_fifo >= CC1120_TXFIFO_IRQ_THR && size != issue_len && bytes_left) {
       timeout = 1;
       while (HAL_GetTick () - start_tick < timeout_ms) {
-        cc_tx_rd_reg(NUM_TXBYTES, &tmp);
-        if (tmp < CC1120_TXFIFO_IRQ_THR) {
+	delay_us(1600);
+        if (tx_thr_flag) {
           timeout = 0;
           break;
         }
@@ -327,11 +347,12 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
       /* Timeout occurred. Abort */
       if (timeout) {
 	delay_us(1000);
+	cc_tx_cmd (SIDLE);
 	cc_tx_cmd (SFTX);
 	return COMMS_STATUS_TIMEOUT - 50;
       }
 
-      processed = in_fifo - CC1120_TXFIFO_IRQ_THR + 1;
+      processed = in_fifo - issue_len ;
       gone += processed;
       in_fifo -= processed;
     }
@@ -344,6 +365,7 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
   /* Wait the FIFO to empty */
   timeout = 1;
   while (HAL_GetTick () - start_tick < timeout_ms) {
+    delay_us(800);
     cc_tx_rd_reg(NUM_TXBYTES, &tmp);
     if (tmp == 0) {
       timeout = 0;
@@ -354,12 +376,14 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
   /* Timeout occurred. Abort */
   if (timeout) {
     delay_us(1000);
+    cc_tx_cmd (SIDLE);
     cc_tx_cmd (SFTX);
     return COMMS_STATUS_TIMEOUT - 100;
   }
 
   /* If you change this, you deserve to die trying to debug... */
   delay_us(1000);
+  cc_tx_cmd (SIDLE);
   cc_tx_cmd (SFTX);
   return gone + in_fifo;
 }

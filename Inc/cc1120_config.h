@@ -25,9 +25,10 @@
  ****************************************************************************/
 
 #define CC1120_TX_MAX_FRAME_LEN 255
-#define CC1120_TX_FIFO_SIZE 126
+#define CC1120_TX_FIFO_SIZE 128
 #define CC1120_TXFIFO_THR 63
 #define CC1120_TXFIFO_IRQ_THR (127 - CC1120_TXFIFO_THR)
+#define CC1120_TXFIFO_AVAILABLE_BYTES (CC1120_TX_FIFO_SIZE - CC1120_TXFIFO_IRQ_THR + 2)
 
 /*****************************************************************************
  ********************* RX related definitions ********************************

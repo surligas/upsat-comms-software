@@ -34,8 +34,8 @@
 #undef __FILE_ID__
 #define __FILE_ID__ 25
 
-static uint8_t interm_buf[AX25_MAX_FRAME_LEN + 2];
-static uint8_t spi_buf[AX25_MAX_FRAME_LEN + 2];
+static uint8_t interm_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN + 2];
+static uint8_t spi_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN];
 static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
 
 extern UART_HandleTypeDef huart5;
@@ -71,7 +71,6 @@ is_tx_enabled()
   uint32_t cnt;
   uint32_t val;
 
-  rf_tx_enable();
   val = comms_read_persistent_word();
   cnt = bit_count(val ^ __COMMS_RF_ON_KEY);
   if(cnt < 16) {

@@ -112,7 +112,7 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
 
 
   /* Repeat the AX.25 sync flag a pre-defined number of times */
-  memcpy(out, AX25_SYNC_FLAG, AX25_PREAMBLE_LEN);
+  memset(out, AX25_SYNC_FLAG, AX25_PREAMBLE_LEN);
   i = AX25_PREAMBLE_LEN;
 
   /* Insert address and control fields */
@@ -151,7 +151,7 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
   out[i++] = (fcs >> 8) & 0xFF;
 
   /* Append the AX.25 postample*/
-  memcpy(out+i, AX25_SYNC_FLAG, AX25_POSTAMBLE_LEN);
+  memset(out+i, AX25_SYNC_FLAG, AX25_POSTAMBLE_LEN);
   return i + AX25_POSTAMBLE_LEN;
 }
 

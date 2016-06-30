@@ -211,6 +211,8 @@ int main(void)
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
           "HELLO WORLD FROM UPSAT 0 "
 		      "HELLO WORLD FROM UPSAT 1"
+		      "HELLO WORLD FROM UPSAT 2"
+		      "HELLO WORLD FROM UPSAT 3"
 		      "loop %d", loop);
 
       ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
@@ -223,10 +225,11 @@ int main(void)
         LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
       }
       loop++;
+      HAL_Delay (500);
     }
 
     /*--------------RX------------*/
-
+#if 0
     memset(aRxBuffer, 0, 255);
     ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS * 2 );
     if(ret < 0){
@@ -244,6 +247,7 @@ int main(void)
 	LOG_UART_DBG(&huart5, "Invalid ECSS. Error %d", ret);
       }
     }
+#endif
 
     /*------------TEMP------------*/
 
@@ -509,7 +513,7 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
       tx_thr_flag = 1;
       break;
     case GPIO_PIN_2:
-      tx_thr_flag = 1;
+      tx_fin_flag = 1;
       break;
     case CC_GPIO2_START_END_OF_PACKET_Pin:
       state = HAL_GPIO_ReadPin (CC_GPIO2_START_END_OF_PACKET_GPIO_Port,

@@ -33,9 +33,9 @@ typedef struct
 
 static const registerSetting_t TX_preferredSettings[]=
 {
-		{IOCFG3,             0x02},
+		{IOCFG3,             0x06},
 		{IOCFG2,             0x02},
-		{IOCFG1,             0xB0},
+		{IOCFG1,             0x40},
 		{IOCFG0,             0x40},
 		{SYNC3,              0x00},
 		{SYNC2,              0x00},
@@ -57,7 +57,7 @@ static const registerSetting_t TX_preferredSettings[]=
 		{SETTLING_CFG,       0x03},
 		{FS_CFG,             0x14},
 		{PKT_CFG1,           0x00},
-		{PKT_CFG0,           CC1120_INFINITE_PKT_LEN},
+		{PKT_CFG0,           CC1120_FIXED_PKT_LEN},
 		{PA_CFG2,            0x2F},  //4-PACFG2 0X26, 6dBm 0x2B 2dbm 0x22,8 DBM 2F
 		{PA_CFG0,            0x7D},
 		{PKT_LEN,            0xFF},
