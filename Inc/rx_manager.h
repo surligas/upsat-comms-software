@@ -23,7 +23,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+void
+rx_init();
+
 int32_t
-rx_data(uint8_t *out, size_t len, uint8_t *dev_rx_buffer, size_t timeout_ms);
+rx_data_packet(uint8_t *out, size_t len, size_t timeout_ms);
+
+int32_t
+rx_data_continuous (uint8_t *out, size_t maxlen, size_t timeout_ms);
+
+
+void
+reset_rx_irqs();
 
 #endif /* INC_RX_MANAGER_H_ */

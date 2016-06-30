@@ -22,6 +22,7 @@
 #include "utils.h"
 #include "log.h"
 #include "status.h"
+#include "scrambler.h"
 #include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
@@ -110,7 +111,7 @@ cc_tx_wr_reg (uint16_t add, uint8_t data)
   }
 
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(400);
+  delay_us(4);
   HAL_SPI_TransmitReceive (&hspi1, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
 			   len, 5000); //send and receive 3 bytes
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
@@ -151,9 +152,13 @@ HAL_StatusTypeDef
 cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
 {
   HAL_StatusTypeDef ret;
+  /* Write the Burst flag at the start of the buffer */
+  tx_frag_buf[0] = BURST_TXFIFO;
+  memcpy(tx_frag_buf + 1, data, len);
+
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
   delay_us(4);
-  ret = HAL_SPI_TransmitReceive (&hspi1, data, spi_rx_data, len,
+  ret = HAL_SPI_TransmitReceive (&hspi1, tx_frag_buf, spi_rx_data, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
   return ret;
@@ -256,7 +261,132 @@ cc_tx_data (const uint8_t *data, uint8_t size, uint8_t *rec_data,
   return gone + in_fifo - 1;
 }
 
+/**
+ *
+ * @param data
+ * @param size
+ * @param rec_data
+ * @param timeout_ms
+ * @return
+ */
+int32_t
+cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
+		       size_t timeout_ms)
+{
+  size_t bytes_left = size;
+  size_t gone = 0;
+  size_t in_fifo = 0;
+  size_t issue_len;
+  size_t processed;
+  uint8_t first_burst = 1;
+  uint32_t start_tick;
+  uint8_t mode;
+  uint8_t timeout;
+  uint8_t tmp;
 
+  /* Reset the packet transmitted flag */
+  tx_fin_flag = 0;
+
+  /* Set the TX into infinite packet length mode only if the frame is
+   * larger than the maximum CC1120 allowed frame
+   */
+  if(size > CC1120_TX_MAX_FRAME_LEN){
+    mode = CC1120_INFINITE_PKT_LEN;
+  }
+  else{
+    mode = CC1120_FIXED_PKT_LEN;
+  }
+  cc_tx_wr_reg(PKT_CFG0, mode);
+  /* Pre-program the packet length register */
+  cc_tx_wr_reg(PKT_LEN, size % (CC1120_TX_MAX_FRAME_LEN + 1));
+
+  /* The clock is ticking... */
+  start_tick = HAL_GetTick ();
+  while( gone + in_fifo < size) {
+    /* Reset the FIFO interrupt flag */
+    tx_thr_flag = 0;
+
+    if(first_burst){
+      first_burst = 0;
+      issue_len = min(CC1120_TX_FIFO_SIZE, size);
+      cc_tx_spi_write_fifo (data, rec_data, issue_len);
+
+      /* Start the TX procedure */
+      cc_tx_cmd (STX);
+    }
+    else{
+      issue_len = min(CC1120_TXFIFO_AVAILABLE_BYTES, size - gone - in_fifo);
+      cc_tx_spi_write_fifo (data + gone + in_fifo, rec_data, issue_len);
+    }
+    bytes_left -= issue_len;
+
+    /* Track the number of bytes in the TX FIFO*/
+    in_fifo += issue_len;
+
+    /*
+     * If the remaining bytes are less than the maximum frame size switch to
+     * fixed packet length mode
+     */
+    if (bytes_left < ((CC1120_TX_MAX_FRAME_LEN + 1) - in_fifo)
+	&& (mode == CC1120_INFINITE_PKT_LEN) ) {
+      cc_tx_wr_reg(PKT_CFG0, CC1120_FIXED_PKT_LEN);
+      mode = CC1120_FIXED_PKT_LEN;
+    }
+
+    /* If the data in the FIFO is above the IRQ limit wait for that IRQ */
+    if (in_fifo >= CC1120_TXFIFO_IRQ_THR && size != issue_len && bytes_left) {
+      timeout = 1;
+      while (HAL_GetTick () - start_tick < timeout_ms) {
+	delay_us(1600);
+        if (tx_thr_flag) {
+          timeout = 0;
+          break;
+        }
+      }
+
+      /* Timeout occurred. Abort */
+      if (timeout) {
+	delay_us(1000);
+	cc_tx_cmd (SIDLE);
+	cc_tx_cmd (SFTX);
+	return COMMS_STATUS_TIMEOUT - 50;
+      }
+
+      processed = in_fifo - issue_len ;
+      gone += processed;
+      in_fifo -= processed;
+    }
+    else {
+      gone += issue_len;
+      in_fifo -= issue_len;
+    }
+  }
+
+  /* Wait the FIFO to empty */
+  timeout = 1;
+  while (HAL_GetTick () - start_tick < timeout_ms) {
+    delay_us(800);
+    cc_tx_rd_reg(NUM_TXBYTES, &tmp);
+    if (tmp == 0) {
+      timeout = 0;
+      break;
+    }
+  }
+
+  /* Timeout occurred. Abort */
+  if (timeout) {
+    delay_us(1000);
+    cc_tx_cmd (SIDLE);
+    cc_tx_cmd (SFTX);
+    return COMMS_STATUS_TIMEOUT - 100;
+  }
+
+  /* If you change this, you deserve to die trying to debug... */
+  delay_us(1000);
+  cc_tx_cmd (SIDLE);
+  cc_tx_cmd (SFTX);
+  return gone + in_fifo;
+}
 
 
 uint8_t
@@ -287,14 +417,33 @@ cc_rx_rd_reg (uint16_t add, uint8_t *data)
   }
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(10);
+  delay_us(4);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) temp_TxBuffer,
 			   (uint8_t *) temp_RxBuffer, len, 5000);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-  delay_us(10);
+  delay_us(4);
   *data = temp_RxBuffer[len - 1];
 
   return temp_RxBuffer[0];
+}
+
+/**
+ * Write to the RX FIFO \p len bytes using the SPI bus
+ * @param data the input buffer containing the data
+ * @param spi_rx_data the SPI buffer for the return bytes
+ * @param len the number of bytes to be sent
+ * @return 0 on success of HAL_StatusTypeDef appropriate error code
+ */
+HAL_StatusTypeDef
+cc_rx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len)
+{
+  HAL_StatusTypeDef ret;
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  delay_us(4);
+  ret = HAL_SPI_TransmitReceive (&hspi2, data, spi_rx_data, len,
+				 COMMS_DEFAULT_TIMEOUT_MS);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+  return ret;
 }
 
 uint8_t
@@ -323,10 +472,11 @@ cc_rx_wr_reg (uint16_t add, uint8_t data)
   }
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(20);
+  delay_us(10);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t *) aTxBuffer, (uint8_t *) aRxBuffer,
-			   len, 5000);
+			   len, COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+  delay_us(10);
 
   return aRxBuffer[0];
 }
@@ -341,7 +491,7 @@ cc_rx_wr_reg (uint16_t add, uint8_t data)
  * the appropriate error
  */
 int32_t
-cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
+cc_rx_data_packet(uint8_t *out, size_t len, size_t timeout_ms)
 {
   HAL_StatusTypeDef ret;
   uint8_t frame_len;
@@ -349,6 +499,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   uint32_t start_tick;
   uint8_t timeout = 1;
   uint8_t rx_n_bytes;
+  uint8_t reg_b;
 
   /*Reset all the RX-related flags */
   rx_sync_flag = 0;
@@ -384,7 +535,14 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   } while (rx_n_bytes < 2);
 
   /* One byte FIFO access */
-  cc_rx_rd_reg(SINGLE_RXFIFO, &frame_len);
+  cc_rx_rd_reg(SINGLE_RXFIFO, &reg_b);
+  frame_len = reg_b;
+
+  /* De-scramble the length byte and get the actual frame length */
+  //descramble_data(h, &frame_len, &reg_b, 1);
+  /* Inform the packet handler about the actual frame length */
+  cc_rx_wr_reg(PKT_LEN, frame_len + 1);
+  //LOG_UART_DBG(&huart5, "Frame len %u", frame_len);
 
   /*
    * Now that we have the frame length check if the FIFO should be dequeued
@@ -432,7 +590,7 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
   if(timeout){
     cc_rx_cmd(SFRX);
     cc_rx_cmd(SIDLE);
-    return COMMS_STATUS_TIMEOUT;
+    return COMMS_STATUS_RXFIFO_ERROR;
   }
 
   /* Now dequeue the remaining bytes in the FIFO if any left*/
@@ -448,9 +606,81 @@ cc_rx_data(uint8_t *out, size_t len, size_t timeout_ms)
     /* One byte FIFO access */
     cc_rx_rd_reg(SINGLE_RXFIFO, out + received);
   }
+
   cc_rx_cmd(SFRX);
   cc_rx_cmd(SIDLE);
   return frame_len;
+}
+
+int32_t
+cc_rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
+{
+  HAL_StatusTypeDef ret;
+  uint8_t received = 0;
+  uint32_t start_tick;
+  uint8_t timeout = 1;
+  uint8_t rx_n_bytes;
+
+  /*Reset all the RX-related flags */
+  rx_thr_flag = 0;
+  rx_finished_flag = 0;
+
+  /* Sorry we do not support 1 byte access */
+  if(len < 2){
+    return 0;
+  }
+
+  /*
+   * If the requested size is less than the FIFO threshold wait until the FIFO
+   * size reaches the desired size
+   */
+  if(len < CC1120_RXFIFO_THR) {
+    do {
+        cc_rx_rd_reg(NUM_RXBYTES, &rx_n_bytes);
+    } while (rx_n_bytes < len);
+
+    ret = cc_rx_spi_read_fifo (out, len);
+
+    if (ret) {
+      cc_rx_cmd (SFRX);
+      cc_rx_cmd (SIDLE);
+      return COMMS_STATUS_NO_DATA;
+    }
+    return len;
+
+  }
+
+  while (len - received > CC1120_RXFIFO_THR) {
+    /* Wait for the RX FIFO above threshold interrupt */
+    start_tick = HAL_GetTick ();
+    timeout = 1;
+    /*Reset the flag */
+    rx_thr_flag = 0;
+    while (HAL_GetTick () - start_tick < timeout_ms) {
+      if (rx_thr_flag) {
+	timeout = 0;
+	break;
+      }
+    }
+
+    if (timeout) {
+      cc_rx_cmd (SFRX);
+      cc_rx_cmd (SIDLE);
+      return COMMS_STATUS_TIMEOUT;
+    }
+
+    /* We can now dequeue CC1120_BYTES_IN_RX_FIF0 bytes */
+    ret = cc_rx_spi_read_fifo (out + received, CC1120_BYTES_IN_RX_FIF0);
+
+    if (ret) {
+      cc_rx_cmd (SFRX);
+      cc_rx_cmd (SIDLE);
+      return COMMS_STATUS_NO_DATA;
+    }
+    received += CC1120_BYTES_IN_RX_FIF0;
+  }
+
+  return len;
 }
 
 
@@ -468,10 +698,11 @@ cc_rx_spi_read_fifo(uint8_t *out, size_t len)
   memset(rx_spi_tx_buf, 0, sizeof(rx_spi_tx_buf));
   rx_spi_tx_buf[0] = BURST_RXFIFO;
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(4);
+  delay_us(32);
   /* Remove the response SPI byte */
   ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, rx_tmp_buf, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
+  delay_us(32);
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_SET);
   memcpy(out, rx_tmp_buf + 1, len);
   return ret;

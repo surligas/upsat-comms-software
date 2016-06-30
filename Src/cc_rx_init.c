@@ -53,19 +53,18 @@ static const registerSetting_t RX_preferredSettings[]=
 {
   {IOCFG3,            0xB0}, /* This GPIO Pin DOES NOT WORK ON OUR BOARD!!!!! */
   {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on rising-falling edge*/
-  {IOCFG1,            0xB0},
   {IOCFG0,            0x00}, /* RXFIFO_THR, on rising edge */
   {SYNC1,             0x7A},
   {SYNC0,             0x0E},
   {SYNC_CFG1,         0x0B},
-  //{SYNC_CFG0,         0x1C},
-  {SYNC_CFG0,         0x0B},
+  {SYNC_CFG0,         0x03}, /* No SYNC word. Noise or data directly pass to the RX FIFO */
   {DCFILT_CFG,        0x1C},
-  {PREAMBLE_CFG1,     0x2A},
+  {PREAMBLE_CFG1,     0x00}, /* No preamble*/
+  {PREAMBLE_CFG0,     0x0A}, /* No preamble*/
   {IQIC,              0xC6},
   {CHAN_BW,           0x08},
   {MDMCFG0,           0x05},
-  {SYMBOL_RATE2,      0x43},
+  {SYMBOL_RATE2,      0x73},
   {SYMBOL_RATE1,      0xA9},
   {SYMBOL_RATE0,      0x2A},
   {AGC_REF,           0x20},
@@ -74,8 +73,8 @@ static const registerSetting_t RX_preferredSettings[]=
   {AGC_CFG0,          0xCF},
   {FIFO_CFG,          CC1120_RXFIFO_THR},
   {FS_CFG,            0x1B},
-  {PKT_CFG1,          0x00},
-  {PKT_CFG0,          0x20},
+  {PKT_CFG1,          0x02},
+  {PKT_CFG0,          0x40}, /* Infinite packet length */
   {PA_CFG2,           0x5D},
   {PA_CFG0,           0x7D},
   {PKT_LEN,           0xFF},
@@ -103,21 +102,98 @@ static const registerSetting_t RX_preferredSettings[]=
   {MODEM_STATUS1,     0x10},
 };
 
+static const registerSetting_t rx_temp_sensor_setup[] =
+{
+    {IOCFG3,            0xB0}, /* This GPIO Pin DOES NOT WORK ON OUR BOARD!!!!! */
+    {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on rising-falling edge*/
+    {IOCFG0,            0x00}, /* RXFIFO_THR, on rising edge */
+    {SYNC_CFG1,         0xA9},
+    {MODCFG_DEV_E,      0x0B},
+    {DCFILT_CFG,        0x40}, //Tempsens settings, bit 6 high
+    {PREAMBLE_CFG1,     0x2C},
+    {PREAMBLE_CFG0,     0x8A},
+    {IQIC,              0x00},
+    {CHAN_BW,           0x81},
+    {FREQ_IF_CFG,       0x00},
+    {MDMCFG1,           0x47}, //Tempsens settings, single ADC, I channel
+    {SYMBOL_RATE2,      0x8F},
+    {SYMBOL_RATE1,      0x75},
+    {SYMBOL_RATE0,      0x10},
+    {AGC_REF,           0x27},
+    {AGC_CS_THR,        0xEE},
+    {AGC_CFG1,          0x11},
+    {AGC_CFG0,          0x94},
+    {FIFO_CFG,          0x00},
+    {FS_CFG,            0x12},
+    {PKT_CFG2,          0x00},
+    {PKT_CFG0,          0x20},
+    {PKT_LEN,           0xFF},
+    {TOC_CFG,           0x03},
+    {FREQ2,             0x56},
+    {FREQ1,             0xCC},
+    {FREQ0,             0xCC},
+    {IF_ADC1,           0xEE},
+    {IF_ADC0,           0x10},
+    {FS_DIG1,           0x04},
+    {FS_DIG0,           0x55},
+    {FS_CAL1,           0x40},
+    {FS_CAL0,           0x0E},
+    {FS_DIVTWO,         0x03},
+    {FS_DSM0,           0x33},
+    {FS_DVC0,           0x17},
+    {FS_PFD,            0x00},
+    {FS_PRE,            0x6E},
+    {FS_REG_DIV_CML,    0x1C},
+    {FS_SPARE,          0xAC},
+    {FS_VCO0,           0xB5},
+    {IFAMP,             0x09},
+    {XOSC5,             0x0E},
+    {XOSC1,             0x03},
+    {ATEST,             0x2A}, //Tempsens settings
+    {ATEST_MODE,        0x07}, //Tempsens settings
+    {GBIAS1,            0x07}, //Tempsens settings
+    {PA_IFAMP_TEST,     0x01}, //Tempsens settings
+};
 
 
 
 
-void rx_registerConfig() {
-	unsigned char writeByte;
-	unsigned i;
-	// Reset radio
-	cc_rx_cmd(SRES);
+/**
+ * Configures the RX CC1120 registers for normal operation
+ */
+void
+rx_register_config ()
+{
+  uint8_t writeByte;
+  uint32_t i;
+  // Reset radio
+  cc_rx_cmd (SRES);
 
-	// Write registers to radio
-	for(i = 0; i < (sizeof(RX_preferredSettings)/sizeof(registerSetting_t)); i++) {
-		writeByte = RX_preferredSettings[i].dat;
-		cc_rx_wr_reg(RX_preferredSettings[i].addr, writeByte);
-	}
+  // Write registers to radio
+  for (i = 0; i < (sizeof(RX_preferredSettings) / sizeof(registerSetting_t));
+      i++) {
+    writeByte = RX_preferredSettings[i].dat;
+    cc_rx_wr_reg (RX_preferredSettings[i].addr, writeByte);
+  }
+}
+
+/**
+ * Configures the RX CC1120 registers for digital temperature readings
+ */
+void
+rx_temp_sensor_register_config ()
+{
+  uint8_t writeByte;
+  uint32_t i;
+  // Reset radio
+  cc_rx_cmd (SRES);
+
+  // Write registers to radio
+  for (i = 0; i < (sizeof(rx_temp_sensor_setup) / sizeof(registerSetting_t));
+      i++) {
+    writeByte = rx_temp_sensor_setup[i].dat;
+    cc_rx_wr_reg (rx_temp_sensor_setup[i].addr, writeByte);
+  }
 }
 
 #define VCDAC_START_OFFSET 2
@@ -129,7 +205,7 @@ void rx_registerConfig() {
 
 
 
-void rx_manualCalibration() {
+void rx_manual_calibration() {
 
     uint8_t original_fs_cal2;
     uint8_t calResults_for_vcdac_start_high[3];

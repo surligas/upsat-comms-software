@@ -22,6 +22,7 @@
 #include <string.h>
 #include "stm32f4xx_hal.h"
 #include "services.h"
+#include "scrambler.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 669
@@ -29,9 +30,11 @@
 extern UART_HandleTypeDef huart5;
 
 static const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
-uint8_t interm_send_buf[AX25_MAX_FRAME_LEN] = {0};
-uint8_t tmp_bit_buf[AX25_MAX_FRAME_LEN * 8 + AX25_MAX_FRAME_LEN] = {0};
+uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN] = {0};
+uint8_t tmp_bit_buf[(AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN) * 8] = {0};
+uint8_t tmp_buf[AX25_MAX_FRAME_LEN * 2] = {0};
 
+scrambler_handle_t h_scrabler;
 
 /**
  * Calculates the FCS of the AX25 frame
@@ -102,12 +105,16 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
 		    uint16_t ctrl, size_t ctrl_len)
 {
   uint16_t fcs;
-  uint16_t i = 1;
+  size_t i;
   if (info_len > AX25_MAX_FRAME_LEN) {
     return 0;
   }
 
-  out[0] = AX25_SYNC_FLAG;
+
+  /* Repeat the AX.25 sync flag a pre-defined number of times */
+  memset(out, AX25_SYNC_FLAG, AX25_PREAMBLE_LEN);
+  i = AX25_PREAMBLE_LEN;
+
   /* Insert address and control fields */
   if (addr_len == AX25_MIN_ADDR_LEN || addr_len == AX25_MAX_ADDR_LEN) {
     memcpy (out + i, addr, addr_len);
@@ -136,14 +143,16 @@ ax25_prepare_frame (uint8_t *out, const uint8_t *info, size_t info_len,
   memcpy (out + i, info, info_len);
   i += info_len;
 
-  /* Compute the FCS. Ignore the first flag byte */
-  fcs = ax25_fcs (out + 1, i - 1);
-  /* The MS bits are sent first ONLY at the FCS field */
-  out[i++] = (fcs >> 8) & 0xFF;
-  out[i++] = fcs & 0xFF;
-  out[i++] = AX25_SYNC_FLAG;
+  /* Compute the FCS. Ignore the AX.25 preamble */
+  fcs = ax25_fcs (out + AX25_PREAMBLE_LEN, i - AX25_PREAMBLE_LEN);
 
-  return i;
+  /* The MS bits are sent first ONLY at the FCS field */
+  out[i++] = fcs & 0xFF;
+  out[i++] = (fcs >> 8) & 0xFF;
+
+  /* Append the AX.25 postample*/
+  memset(out+i, AX25_SYNC_FLAG, AX25_POSTAMBLE_LEN);
+  return i + AX25_POSTAMBLE_LEN;
 }
 
 /**
@@ -176,12 +185,14 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
   size_t i;
 
   /* Leading FLAG field does not need bit stuffing */
-  memcpy (out, AX25_SYNC_FLAG_MAP_BIN, 8 * sizeof(uint8_t));
-  out_idx = 8;
+  for(i = 0; i < AX25_PREAMBLE_LEN; i++){
+    memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8);
+    out_idx += 8;
+  }
 
-  /* Skip the leading and trailing FLAG field */
-  buffer++;
-  for (i = 0; i < 8 * (buffer_len - 2); i++) {
+  /* Skip the AX.25 preamble and postable */
+  buffer += AX25_PREAMBLE_LEN;
+  for (i = 0; i < 8 * (buffer_len - AX25_PREAMBLE_LEN - AX25_POSTAMBLE_LEN); i++) {
     bit = (buffer[i / 8] >> (i % 8)) & 0x1;
     out[out_idx++] = bit;
 
@@ -208,116 +219,84 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
     }
   }
 
-  /* Trailing FLAG field does not need bit stuffing */
-  memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8 * sizeof(uint8_t));
-  out_idx += 8;
+  /*Postamble does not need bit stuffing */
+  for(i = 0; i < AX25_POSTAMBLE_LEN; i++){
+    memcpy (out + out_idx, AX25_SYNC_FLAG_MAP_BIN, 8);
+    out_idx += 8;
+  }
 
   *out_len = out_idx;
   return AX25_ENC_OK;
 }
 
 ax25_decode_status_t
-ax25_decode (uint8_t *out, size_t *out_len, const uint8_t *ax25_frame,
-	     size_t len)
+ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
+	     const uint8_t *ax25_frame, size_t len)
 {
   size_t i;
-  size_t frame_start = UINT_MAX;
-  size_t frame_stop = UINT_MAX;
-  uint8_t res;
-  size_t cont_1 = 0;
-  size_t received_bytes = 0;
-  size_t bit_cnt = 0;
-  uint8_t decoded_byte = 0x0;
   uint16_t fcs;
   uint16_t recv_fcs;
 
-  if(len < 2 * sizeof(AX25_SYNC_FLAG_MAP_BIN)) {
-    return AX25_DEC_SIZE_ERROR;
-  }
+  for(i = 0; i < len * 8; i++){
+    h->shift_reg = (h->shift_reg >> 1) | (((ax25_frame[i/8] >> (i%8) ) & 0x1) << 7);
 
-  /* Start searching for the SYNC flag */
-  for (i = 0; i < len - sizeof(AX25_SYNC_FLAG_MAP_BIN); i++) {
-    res = (AX25_SYNC_FLAG_MAP_BIN[0] ^ ax25_frame[i])
-	| (AX25_SYNC_FLAG_MAP_BIN[1] ^ ax25_frame[i + 1])
-	| (AX25_SYNC_FLAG_MAP_BIN[2] ^ ax25_frame[i + 2])
-	| (AX25_SYNC_FLAG_MAP_BIN[3] ^ ax25_frame[i + 3])
-	| (AX25_SYNC_FLAG_MAP_BIN[4] ^ ax25_frame[i + 4])
-	| (AX25_SYNC_FLAG_MAP_BIN[5] ^ ax25_frame[i + 5])
-	| (AX25_SYNC_FLAG_MAP_BIN[6] ^ ax25_frame[i + 6])
-	| (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
-    /* Found it! */
-    if (res == 0) {
-      frame_start = i;
-      break;
-    }
-  }
+    /* Check for the AX.25 SYNC Flag */
+    if(h->shift_reg == AX25_SYNC_FLAG){
+     /*
+       * If we are already inside a frame and the distance between the SYNC flags
+       * is greater than the minimum allowed, then this is the end of the frame
+       */
+      if(h->in_frame && h->decoded_num > AX25_MIN_ADDR_LEN){
 
-  /* We failed to find the SYNC flag */
-  if (frame_start == UINT_MAX) {
-   return AX25_DEC_START_SYNC_NOT_FOUND;
-  }
+	/* Now check the CRC */
+	fcs = ax25_fcs (out, h->decoded_num - sizeof(uint16_t));
+	recv_fcs = (((uint16_t) out[h->decoded_num - 2]) << 8)
+	    | out[h->decoded_num - 1];
 
-  for (i = frame_start + sizeof(AX25_SYNC_FLAG_MAP_BIN);
-      i < len - sizeof(AX25_SYNC_FLAG_MAP_BIN) + 1; i++) {
-    /* Check if we reached the frame end */
-    res = (AX25_SYNC_FLAG_MAP_BIN[0] ^ ax25_frame[i])
-	| (AX25_SYNC_FLAG_MAP_BIN[1] ^ ax25_frame[i + 1])
-	| (AX25_SYNC_FLAG_MAP_BIN[2] ^ ax25_frame[i + 2])
-	| (AX25_SYNC_FLAG_MAP_BIN[3] ^ ax25_frame[i + 3])
-	| (AX25_SYNC_FLAG_MAP_BIN[4] ^ ax25_frame[i + 4])
-	| (AX25_SYNC_FLAG_MAP_BIN[5] ^ ax25_frame[i + 5])
-	| (AX25_SYNC_FLAG_MAP_BIN[6] ^ ax25_frame[i + 6])
-	| (AX25_SYNC_FLAG_MAP_BIN[7] ^ ax25_frame[i + 7]);
-    /* Found it! */
-    if (res == 0) {
-      frame_stop = i;
-      break;
-    }
-
-    if (ax25_frame[i]) {
-      cont_1++;
-      decoded_byte |= (1 << bit_cnt);
-      bit_cnt++;
-    }
-    else {
-      /* If 5 consecutive 1's drop the extra zero*/
-      if (cont_1 >= 5) {
-	cont_1 = 0;
+	if (fcs != recv_fcs) {
+	  LOG_UART_DBG(&huart5, "Computed: 0x%02x Recv 0x%02x", fcs, recv_fcs);
+	  ax25_rx_reset(h);
+	  return AX25_DEC_CRC_FAIL;
+	}
+	*out_len =  h->decoded_num - sizeof(uint16_t);
+	ax25_rx_reset(h);
+	return AX25_DEC_OK;
+      }
+      /* Set the new start */
+      else if(h->in_frame) {
+	h->decoded_num = 0;
+	h->bit_cnt = 0;
       }
       else {
-	bit_cnt++;
-	cont_1 = 0;
+	h->in_frame = 1;
+	h->decoded_num = 0;
+	h->bit_cnt = 0;
+      }
+      continue;
+    }
+
+    if(h->in_frame) {
+      /* Check if bit stuffing occurred */
+      if( (h->shift_reg & 0x7c) == 0x7c) {
+	/* Drop the extra 0-bit inserted */
+	h->shift_reg <<=1;
+      }
+      else{
+	h->bit_cnt++;
+      }
+
+      /* Now check if a byte is filled */
+      if(h->bit_cnt == 8){
+	h->bit_cnt = 0;
+	out[h->decoded_num++] = h->shift_reg;
+	if(h->decoded_num > AX25_MAX_FRAME_LEN){
+	  ax25_rx_reset(h);
+	  return AX25_DEC_SIZE_ERROR;
+	}
       }
     }
-
-    /* Fill the fully constructed byte */
-    if (bit_cnt == 8) {
-      out[received_bytes++] = decoded_byte;
-      bit_cnt = 0;
-      decoded_byte = 0x0;
-    }
   }
-
-  if (frame_stop == UINT_MAX ) {
-    return AX25_DEC_STOP_SYNC_NOT_FOUND;
-  }
-
-  if( received_bytes < AX25_MIN_ADDR_LEN ){
-    return AX25_DEC_SIZE_ERROR;
-  }
-
-  /* Now check the CRC */
-  fcs = ax25_fcs (out, received_bytes - sizeof(uint16_t));
-  recv_fcs = (((uint16_t) out[received_bytes - 2]) << 8)
-      | out[received_bytes - 1];
-
-  if (fcs != recv_fcs) {
-    LOG_UART_DBG(&huart5, "Computed: 0x%02x Recv 0x%02x", fcs, recv_fcs)
-    return AX25_DEC_CRC_FAIL;
-  }
-
-  *out_len = received_bytes - sizeof(uint16_t);
-  return AX25_DEC_OK;
+  return AX25_DEC_NOT_READY;
 }
 
 int32_t
@@ -342,52 +321,79 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
    */
   interm_len = ax25_prepare_frame (interm_send_buf, in, len, AX25_UI_FRAME,
 				   addr_buf, addr_len, __UPSAT_AX25_CTRL, 1);
+  if(interm_len == 0){
+    return -1;
+  }
 
   status = ax25_bit_stuffing(tmp_bit_buf, &ret_len, interm_send_buf, interm_len);
   if( status != AX25_ENC_OK){
     return -1;
   }
 
-  memset(out, 0, ret_len/8 * sizeof(uint8_t));
   /* Pack now the bits into full bytes */
+  memset(interm_send_buf, 0, sizeof(interm_send_buf));
   for (i = 0; i < ret_len; i++) {
-    out[i/8] |= tmp_bit_buf[i] << (7 - (i % 8));
+    interm_send_buf[i/8] |= tmp_bit_buf[i] << (i % 8);
   }
-  pad_bits = 8 - (ret_len % 8);
+
+  /*Perhaps some padding is needed due to bit stuffing */
+  if(ret_len % 8){
+    pad_bits = 8 - (ret_len % 8);
+  }
   ret_len += pad_bits;
-  out[ret_len/8] &= (0xFF << pad_bits);
+
+  /* Perform NRZI and scrambling based on the G3RUH polynomial */
+  scrambler_init (&h_scrabler, __SCRAMBLER_POLY, __SCRAMBLER_SEED,
+		  __SCRAMBLER_ORDER);
+  scrambler_reset(&h_scrabler);
+  scramble_data_nrzi(&h_scrabler, out, interm_send_buf,
+		     ret_len/8);
+
+  /* AX.25 sends MS bit first*/
+  for(i = 0; i < ret_len/8; i++){
+    out[i] = reverse_byte(out[i]);
+  }
+
   return ret_len/8;
 }
 
+/**
+ * This function tries to extract a valid AX.25 payload for the input data.
+ * This method can be called repeatedly with input data that can be random noise
+ * or subset of the actual frame. When the entire frame is retrieved this functions
+ * returns the frame size.
+ *
+ * @param h the AX.25 decoder handle
+ * @param out the output buffer that should hold the AX.25 payload. It should be
+ * enough in size to hold an entire AX.25 payload.
+ * @param out_len the length of the decoded frame when it is available
+ * @param in the input buffer
+ * @param len the size of the input buffer
+ * @return AX25_DEC_NOT_READY if the frame has not yet (entirely) retrieved, or
+ * AX25_DEC_OK when a frame successfully retrieved.
+ * error.
+ */
 int32_t
-ax25_recv(uint8_t *out, const uint8_t *in, size_t len)
+ax25_recv(ax25_handle_t *h, uint8_t *out, size_t *out_len, const uint8_t *in, size_t len)
 {
   size_t i;
   size_t decode_len;
   ax25_decode_status_t status;
 
-  if(len > AX25_MAX_FRAME_LEN) {
-    return AX25_DEC_SIZE_ERROR;
+  if(len == 0) {
+    return AX25_DEC_NOT_READY;
   }
 
-  /* Apply one bit per byte for easy decoding */
-  for (i = 0; i < len; i++) {
-    tmp_bit_buf[8*i] = (in[i] >> 7) & 0x1;
-    tmp_bit_buf[8*i + 1] = (in[i] >> 6) & 0x1;
-    tmp_bit_buf[8*i + 2] = (in[i] >> 5) & 0x1;
-    tmp_bit_buf[8*i + 3] = (in[i] >> 4) & 0x1;
-    tmp_bit_buf[8*i + 4] = (in[i] >> 3) & 0x1;
-    tmp_bit_buf[8*i + 5] = (in[i] >> 2) & 0x1;
-    tmp_bit_buf[8*i + 6] = (in[i] >> 1) & 0x1;
-    tmp_bit_buf[8*i + 7] = in[i]  & 0x1;
-  }
+  /* Now descramble the AX.25 frame */
+ descramble_data_nrzi(&h->descrambler, tmp_buf, in, len);
 
   /* Perform the actual decoding */
-  status = ax25_decode(out, &decode_len, tmp_bit_buf, len * 8);
+  status = ax25_decode(h, out, &decode_len, tmp_buf, len);
   if( status != AX25_DEC_OK){
     return status;
   }
-  return (size_t) decode_len;
+  *out_len = decode_len;
+  return AX25_DEC_OK;
 }
 
 /**
@@ -438,7 +444,7 @@ ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
     return AX25_DEC_FAIL;
   }
 
-  if(addr_len != AX25_MIN_ADDR_LEN && addr_len != AX25_MIN_ADDR_LEN) {
+  if(addr_len != AX25_MIN_ADDR_LEN && addr_len != AX25_MAX_ADDR_LEN) {
     return AX25_DEC_SIZE_ERROR;
   }
 
@@ -449,4 +455,38 @@ ax25_extract_payload(uint8_t *out, const uint8_t *in, size_t frame_len,
   /* Skip also the control field and the frame type field */
   memcpy(out, in + addr_len + ctrl_len + 1, frame_len - addr_len - ctrl_len -1);
   return frame_len - addr_len - ctrl_len - 1;
+}
+
+/**
+ * Initializes the AX.25 decoder handler
+ * @param h pointer to an AX.25 decoder handler
+ * @return 0 on success or a negative number in case of error
+ */
+int32_t
+ax25_rx_init(ax25_handle_t *h)
+{
+  if(!h){
+    return -1;
+  }
+  descrambler_init (&h->descrambler, __SCRAMBLER_POLY, __SCRAMBLER_SEED,
+		    __SCRAMBLER_ORDER);
+  return ax25_rx_reset(h);
+}
+
+/**
+ * Resets to the initial defaults the AX.25 receiver
+ * @param h the AX.25 decoder handler
+ * @return 0 on success or a negative number in case of error
+ */
+int32_t
+ax25_rx_reset(ax25_handle_t *h)
+{
+  if(!h){
+    return -1;
+  }
+  h->decoded_num = 0;
+  h->in_frame = 0;
+  h->shift_reg = 0;
+  h->bit_cnt = 0;
+  return descrambler_reset(&h->descrambler);
 }

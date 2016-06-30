@@ -20,13 +20,24 @@
 #ifndef INC_CC1120_CONFIG_H_
 #define INC_CC1120_CONFIG_H_
 
-#define CC1120_TX_MAX_FRAME_LEN 255
-#define CC1120_TX_FIFO_SIZE 127
-#define CC1120_RX_FIFO_SIZE 128
+/*****************************************************************************
+ ********************* TX related definitions ********************************
+ ****************************************************************************/
 
+#define CC1120_TX_MAX_FRAME_LEN 255
+#define CC1120_TX_FIFO_SIZE 128
 #define CC1120_TXFIFO_THR 63
-#define CC1120_TXFIFO_IRQ_THR (CC1120_TX_FIFO_SIZE - CC1120_TXFIFO_THR)
-#define CC1120_RXFIFO_THR 63
+#define CC1120_TXFIFO_IRQ_THR (127 - CC1120_TXFIFO_THR)
+#define CC1120_TXFIFO_AVAILABLE_BYTES (CC1120_TX_FIFO_SIZE - CC1120_TXFIFO_IRQ_THR + 2)
+
+/*****************************************************************************
+ ********************* RX related definitions ********************************
+ ****************************************************************************/
+#define CC1120_RX_FIFO_SIZE 128
+#define CC1120_RXFIFO_THR 64
 #define CC1120_BYTES_IN_RX_FIF0 (CC1120_RXFIFO_THR + 1)
+
+#define CC1120_INFINITE_PKT_LEN 0x40
+#define CC1120_FIXED_PKT_LEN 0x00
 
 #endif /* INC_CC1120_CONFIG_H_ */

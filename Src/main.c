@@ -46,6 +46,7 @@
 #include "pkt_pool.h"
 #include "service_utilities.h"
 #include "comms_manager.h"
+#include "sensors.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -83,6 +84,8 @@ volatile uint8_t rx_sync_flag = 0;
 volatile uint8_t rx_finished_flag = 0;
 volatile uint8_t rx_thr_flag = 0;
 
+uint8_t dbg_msg = 0;
+
 uint8_t uart_temp[200];
 /* USER CODE END PV */
 
@@ -102,25 +105,6 @@ static void MX_USART3_UART_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-SAT_returnState tx_test(tc_tm_pkt *pkt) {
-
-    int ret = 0;
-    
-    uint16_t size = 0;
-    SAT_returnState res;    
-
-    pack_pkt(payload, pkt, &size);
-
-    //if(!C_ASSERT(size > 0) == true) { return SATR_ERROR; }
-
-    if (ret > 0) {
-      HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
-    }
-    else {
-      LOG_UART_DBG(&huart5, "Error at AX.25 encoding");
-    }
-}
 
 static inline void
 debug_ecss()
@@ -149,7 +133,8 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  int ret = 0;
+  int32_t ret = 0;
+  int8_t temp;
   uint8_t rst_src;
   /* USER CODE END 1 */
 
@@ -181,13 +166,19 @@ int main(void)
   HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET); //PIN36 2RESETN
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET); //PIN36 2CSN
 
+  /*Must use this in order the compiler occupies flash sector 3*/
+  flash_INIT();
+  
+  uint32_t add_read = flash_read_trasmit();
+
   HAL_Delay (4000);
 
   comms_init();
-  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
+  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
   HAL_Delay (100);
 
+  init_adt7420 ();
 
   pkt_pool_INIT ();
 
@@ -211,34 +202,36 @@ int main(void)
   while (1) {
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
 
-    HAL_Delay (300);
-
-    debug_ecss();
+    //debug_ecss();
 
     /*--------------TX------------*/
+    if(dbg_msg == 0)
+    {
+      /* Send a dummy message towards earth */
+      ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
+          "HELLO WORLD FROM UPSAT 0 "
+		      "HELLO WORLD FROM UPSAT 1"
+		      "HELLO WORLD FROM UPSAT 2"
+		      "HELLO WORLD FROM UPSAT 3"
+		      "loop %d", loop);
 
-    /* Send a dummy message towards earth */
-    ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 0 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 1 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 2 "
-		    "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT 3 at loop %d", loop);
-    ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
-    HAL_Delay (50);
-    if (ret > 0) {
+      ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
       HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
+      if (ret > 0) {
+        HAL_Delay (50);
+        LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
+      }
+      else {
+        LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
+      }
+      loop++;
+      HAL_Delay (500);
     }
-    else {
-      LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
-    }
-    loop++;
-
 
     /*--------------RX------------*/
-
+#if 0
     memset(aRxBuffer, 0, 255);
-    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS);
+    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS * 2 );
     if(ret < 0){
       LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
     }
@@ -246,9 +239,20 @@ int main(void)
       LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
       HAL_Delay (50);
       LOG_UART_DBG(&huart5, "RX Msg OK: %s", aRxBuffer);
+      ret = rx_ecss(aRxBuffer, ret);
+      if(ret == SATR_OK){
+	LOG_UART_DBG(&huart5, "ECSS Valid");
+      }
+      else{
+	LOG_UART_DBG(&huart5, "Invalid ECSS. Error %d", ret);
+      }
     }
+#endif
 
-    HAL_Delay (100);
+    /*------------TEMP------------*/
+
+    large_data_IDLE();
+    //HAL_Delay (100);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -274,8 +278,8 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 192;
+  RCC_OscInitStruct.PLL.PLLM = 6;
+  RCC_OscInitStruct.PLL.PLLN = 84;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   HAL_RCC_OscConfig(&RCC_OscInitStruct);
@@ -283,10 +287,10 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV8;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
-  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0);
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2);
 
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
@@ -324,7 +328,7 @@ void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -344,7 +348,7 @@ void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -391,8 +395,8 @@ void MX_USART3_UART_Init(void)
 void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA2_CLK_ENABLE();
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream3_IRQn interrupt configuration */
@@ -506,10 +510,10 @@ HAL_GPIO_EXTI_Callback (uint16_t GPIO_Pin)
   GPIO_PinState state;
   switch(GPIO_Pin){
     case GPIO_PIN_3:
-      tx_fin_flag = 1;
+      tx_thr_flag = 1;
       break;
     case GPIO_PIN_2:
-      tx_thr_flag = 1;
+      tx_fin_flag = 1;
       break;
     case CC_GPIO2_START_END_OF_PACKET_Pin:
       state = HAL_GPIO_ReadPin (CC_GPIO2_START_END_OF_PACKET_GPIO_Port,
