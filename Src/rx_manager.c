@@ -39,33 +39,6 @@ rx_init()
   ax25_rx_init(&h_ax25dec);
 }
 
-/**
- * Received and decodes using the AX.25 encapsulation a new frame.
- * This is a blocking call. It will block either until a frame is received
- * or the timeout limit is reached
- * @param out the output buffer
- * @param len the length of the output buffer
- * @param timeout_ms the timeout limit in milliseconds
- * @return the number of bytes received and decoded or appropriate error code.
- * Note that this function does not perform any AX.25 header extraction
- */
-int32_t
-rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
-{
-  int32_t ret;
-
-  memset(tmp_buf, 0, sizeof(tmp_buf));
-  ret = cc_rx_data_packet ( tmp_buf, AX25_MAX_FRAME_LEN,
-		    COMMS_DEFAULT_TIMEOUT_MS);
-  if(ret < 1){
-    return ret;
-  }
-
-  /* Frame received. Try to decode it using the AX.25 encapsulation */
-  //ret = ax25_recv(&h_descrambler, out, tmp_buf, ret);
-
-  return ret;
-}
 
 int32_t
 rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
