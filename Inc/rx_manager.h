@@ -27,11 +27,7 @@ void
 rx_init();
 
 int32_t
-rx_data_packet(uint8_t *out, size_t len, size_t timeout_ms);
-
-int32_t
 rx_data_continuous (uint8_t *out, size_t maxlen, size_t timeout_ms);
-
 
 void
 reset_rx_irqs();

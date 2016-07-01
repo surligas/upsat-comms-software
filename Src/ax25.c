@@ -250,8 +250,8 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 
 	/* Now check the CRC */
 	fcs = ax25_fcs (out, h->decoded_num - sizeof(uint16_t));
-	recv_fcs = (((uint16_t) out[h->decoded_num - 2]) << 8)
-	    | out[h->decoded_num - 1];
+	recv_fcs = (((uint16_t) out[h->decoded_num - 1]) << 8)
+	    | out[h->decoded_num - 2];
 
 	if (fcs != recv_fcs) {
 	  LOG_UART_DBG(&huart5, "Computed: 0x%02x Recv 0x%02x", fcs, recv_fcs);
