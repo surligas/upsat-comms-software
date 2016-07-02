@@ -57,10 +57,9 @@ static const registerSetting_t RX_preferredSettings[]=
   {SYNC1,             0x7A},
   {SYNC0,             0x0E},
   {SYNC_CFG1,         0x0B},
-  {SYNC_CFG0,         0x03}, /* No SYNC word. Noise or data directly pass to the RX FIFO */
+  {SYNC_CFG0,         0x0B},
   {DCFILT_CFG,        0x1C},
-  {PREAMBLE_CFG1,     0x00}, /* No preamble*/
-  {PREAMBLE_CFG0,     0x0A}, /* No preamble*/
+  {PREAMBLE_CFG1,     0x2A},
   {IQIC,              0xC6},
   {CHAN_BW,           0x08},
   {MDMCFG0,           0x05},
@@ -73,8 +72,8 @@ static const registerSetting_t RX_preferredSettings[]=
   {AGC_CFG0,          0xCF},
   {FIFO_CFG,          CC1120_RXFIFO_THR},
   {FS_CFG,            0x1B},
-  {PKT_CFG1,          0x02},
-  {PKT_CFG0,          0x40}, /* Infinite packet length */
+  {PKT_CFG1,          0x00},
+  {PKT_CFG0,          0x20},
   {PA_CFG2,           0x5D},
   {PA_CFG0,           0x7D},
   {PKT_LEN,           0xFF},

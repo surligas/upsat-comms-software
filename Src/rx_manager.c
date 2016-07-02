@@ -33,6 +33,17 @@ extern UART_HandleTypeDef huart5;
 uint8_t tmp_buf[AX25_MAX_FRAME_LEN + 2];
 ax25_handle_t h_ax25dec;
 
+/**
+ * Resets all the IRQ flags involved in RX operations
+ */
+static inline void
+reset_rx_irqs()
+{
+  rx_sync_flag = 0;
+  rx_finished_flag = 0;
+  rx_thr_flag = 0;
+}
+
 void
 rx_init()
 {
@@ -49,6 +60,8 @@ rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
   int32_t ax25_status;
   size_t decode_len;
 
+  cc_tx_wr_reg(PKT_CFG0, CC1120_INFINITE_PKT_LEN);
+
   reset_rx_irqs();
   ax25_rx_reset(&h_ax25dec);
 
@@ -58,11 +71,24 @@ rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
 
   start_tick = HAL_GetTick();
 
+  /* Now wait for the SYNC word to be received */
+  while (HAL_GetTick () - start_tick < timeout_ms) {
+    if (rx_sync_flag) {
+      timeout = 0;
+      break;
+    }
+  }
+
+  /* Timeout occurred, just return */
+  if (timeout) {
+    cc_rx_cmd (SFRX);
+    cc_rx_cmd (SIDLE);
+    return COMMS_STATUS_TIMEOUT;
+  }
+
   /* Try to decode an AX.25 message inside the given amount of time */
   while(HAL_GetTick() - start_tick < timeout_ms) {
     timeout = 1;
-    /*Reset the flag */
-    rx_thr_flag = 0;
     while (HAL_GetTick () - start_tick < timeout_ms) {
       if (rx_thr_flag) {
 	timeout = 0;
@@ -78,6 +104,8 @@ rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
 
     /* We can now dequeue CC1120_BYTES_IN_RX_FIF0 bytes */
     ret = cc_rx_spi_read_fifo(tmp_buf, CC1120_BYTES_IN_RX_FIF0);
+    /*Reset the FIFO flag */
+    rx_thr_flag = 0;
 
     if(ret) {
       cc_rx_cmd(SFRX);
@@ -100,13 +128,34 @@ rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
   return COMMS_STATUS_TIMEOUT;
 }
 
+
 /**
- * Resets all the IRQ flags involved in RX operations
+ * Received and decodes using the AX.25 encapsulation a new frame.
+ * This is a blocking call. It will block either until a frame is received
+ * or the timeout limit is reached
+ * @param out the output buffer
+ * @param len the length of the output buffer
+ * @param timeout_ms the timeout limit in milliseconds
+ * @return the number of bytes received and decoded or appropriate error code.
+ * Note that this function does not perform any AX.25 header extraction
  */
-void
-reset_rx_irqs()
+int32_t
+rx_data(uint8_t *out, size_t len, size_t timeout_ms)
 {
-  rx_sync_flag = 0;
-  rx_finished_flag = 0;
-  rx_thr_flag = 0;
+  int32_t ret;
+  size_t decode_len;
+  ax25_rx_reset(&h_ax25dec);
+
+  memset(tmp_buf, 0, sizeof(tmp_buf));
+  ret = cc_rx_data_packet(tmp_buf, AX25_MAX_FRAME_LEN, timeout_ms);
+  if(ret < 1){
+    return ret;
+  }
+
+  /* Frame received. Try to decode it using the AX.25 encapsulation */
+  ret = ax25_recv(&h_ax25dec, out, &decode_len, tmp_buf, ret);
+  if(ret > 0){
+    return (int32_t) decode_len;
+  }
+  return ret;
 }

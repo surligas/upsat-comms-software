@@ -50,6 +50,16 @@ typedef enum
   AX25_UI_FRAME /**!< AX25_UI_FRAME Unnumbered information frame */
 } ax25_frame_type_t;
 
+/**
+ * The different states of the AX.25 decoder
+ */
+typedef enum
+{
+  AX25_NO_SYNC, //!< AX25_NO_SYNC when not frame has been seen yet
+  AX25_IN_SYNC, //!< AX25_IN_SYNC the stating SYNC flag has been received
+  AX25_FRAME_END//!< AX25_FRAME_END the trailing SYNC flag has been received
+}ax25_decoding_state_t;
+
 typedef enum
 {
   AX25_ENC_FAIL, AX25_ENC_OK
@@ -80,7 +90,7 @@ typedef struct
 
 typedef struct
 {
-  uint8_t in_frame;
+  ax25_decoding_state_t state;
   size_t decoded_num;
   uint8_t shift_reg;
   uint8_t bit_cnt;
@@ -116,8 +126,12 @@ int32_t
 ax25_send(uint8_t *out, const uint8_t *in, size_t len);
 
 int32_t
-ax25_recv(ax25_handle_t *h, uint8_t *out, size_t *out_len, const uint8_t *in,
-	  size_t len);
+ax25_recv_nrzi (ax25_handle_t *h, uint8_t *out, size_t *out_len,
+		const uint8_t *in, size_t len);
+
+int32_t
+ax25_recv (ax25_handle_t *h, uint8_t *out, size_t *out_len, const uint8_t *in,
+	   size_t len);
 
 uint8_t
 ax25_check_dest_callsign (const uint8_t *ax25_frame, size_t frame_len,
