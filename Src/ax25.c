@@ -313,6 +313,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	else{
 	  h->bit_cnt++;
 	  if(h->bit_cnt == 8){
+	    h->bit_cnt = 0;
 	    out[h->decoded_num++] = h->shift_reg;
 
 	    /* if the maximum allowed frame reached, restart */
