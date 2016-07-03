@@ -237,6 +237,7 @@ ax25_decoder_reset(ax25_handle_t *h)
   h->decoded_num = 0;
   h->bit_cnt = 0;
   h->shift_reg = 0x0;
+  h->dec_byte = 0x0;
 }
 
 static inline void
@@ -246,6 +247,7 @@ ax25_decoder_enter_sync(ax25_handle_t *h)
   h->decoded_num = 0;
   h->bit_cnt = 0;
   h->shift_reg = 0x0;
+  h->dec_byte = 0x0;
 }
 
 static inline void
@@ -255,6 +257,7 @@ ax25_decoder_enter_frame_end(ax25_handle_t *h)
   h->decoded_num = 0;
   h->bit_cnt = 0;
   h->shift_reg = 0x0;
+  h->dec_byte = 0x0;
 }
 
 ax25_decode_status_t
@@ -264,9 +267,12 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
   size_t i;
   uint16_t fcs;
   uint16_t recv_fcs;
+  uint16_t new_bit;
 
   for(i = 0; i < len * 8; i++){
-    h->shift_reg = (h->shift_reg >> 1) | (((ax25_frame[i/8] >> (i%8) ) & 0x1) << 7);
+    new_bit = (((ax25_frame[i/8] >> (i%8) ) & 0x1) << 7);
+    h->shift_reg = (h->shift_reg >> 1) | new_bit;
+    h->dec_byte = (h->dec_byte >> 1) | new_bit;
 
     switch(h->state){
       case AX25_NO_SYNC:
@@ -304,7 +310,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	}
 	else if ((h->shift_reg & 0xfc) == 0x7c) {
 	  /*This was a stuffed bit */
-	  h->shift_reg <<= 1;
+	  h->dec_byte <<= 1;
 	}
 	else if((h->shift_reg & 0xfe) == 0xfe){
 	  /* This is definitely an error */
@@ -314,7 +320,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	  h->bit_cnt++;
 	  if(h->bit_cnt == 8){
 	    h->bit_cnt = 0;
-	    out[h->decoded_num++] = h->shift_reg;
+	    out[h->decoded_num++] = h->dec_byte;
 
 	    /* if the maximum allowed frame reached, restart */
 	    if(h->decoded_num > AX25_MAX_FRAME_LEN){
@@ -329,6 +335,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	  h->decoded_num = 0;
 	  h->bit_cnt = 0;
 	  h->shift_reg = 0x0;
+	  h->dec_byte = 0x0;
 	}
 	else{
 	  h->bit_cnt++;

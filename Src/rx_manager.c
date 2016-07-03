@@ -154,7 +154,7 @@ rx_data(uint8_t *out, size_t len, size_t timeout_ms)
 
   /* Frame received. Try to decode it using the AX.25 encapsulation */
   ret = ax25_recv(&h_ax25dec, out, &decode_len, tmp_buf, ret);
-  if(ret > 0){
+  if(ret == AX25_DEC_OK){
     return (int32_t) decode_len;
   }
   return ret;
