@@ -93,6 +93,7 @@ typedef struct
   ax25_decoding_state_t state;
   size_t decoded_num;
   uint8_t shift_reg;
+  uint8_t dec_byte;
   uint8_t bit_cnt;
   scrambler_handle_t descrambler;
 } ax25_handle_t;
