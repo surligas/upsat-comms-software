@@ -385,52 +385,75 @@ cc_rx_wr_reg (uint16_t add, uint8_t data)
   return aRxBuffer[0];
 }
 
+static inline void
+cc_rx_reset_irqs()
+{
+  rx_sync_flag = 0;
+  rx_finished_flag = 0;
+  rx_thr_flag = 0;
+}
 
-
+/**
+ * Get a frame from the air. This method blocks for \p timeout_ms milliseconds
+ * until a valid frame is received.
+ * @param out the output buffer
+ * @param len the size of the output buffer
+ * @param timeout_ms the timeout period in milliseconds
+ * @return the size of the frame in bytes or a negative number indicating
+ * the appropriate error
+ */
 int32_t
-cc_rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
+cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
 {
   HAL_StatusTypeDef ret;
+  uint8_t frame_len;
   uint8_t received = 0;
   uint32_t start_tick;
   uint8_t timeout = 1;
   uint8_t rx_n_bytes;
 
   /*Reset all the RX-related flags */
-  rx_thr_flag = 0;
-  rx_finished_flag = 0;
+  cc_rx_reset_irqs();
 
-  /* Sorry we do not support 1 byte access */
-  if(len < 2){
-    return 0;
+  /* Start the reception by issuing the start-RX command */
+  cc_rx_cmd (SFRX);
+  cc_rx_cmd (SRX);
+
+  /* Now wait for the SYNC word to be received */
+  start_tick = HAL_GetTick ();
+  while (HAL_GetTick () - start_tick < timeout_ms) {
+    if (rx_sync_flag) {
+      timeout = 0;
+      break;
+    }
+  }
+
+  /* Timeout occurred, just return */
+  if (timeout) {
+    cc_rx_cmd (SFRX);
+    cc_rx_cmd (SIDLE);
+    return COMMS_STATUS_TIMEOUT;
   }
 
   /*
-   * If the requested size is less than the FIFO threshold wait until the FIFO
-   * size reaches the desired size
+   * Time to extract the frame length,. This is indicated by the first byte
+   * after the SYNC word
    */
-  if(len < CC1120_RXFIFO_THR) {
-    do {
-        cc_rx_rd_reg(NUM_RXBYTES, &rx_n_bytes);
-    } while (rx_n_bytes < len);
-
-    ret = cc_rx_spi_read_fifo (out, len);
-
-    if (ret) {
-      cc_rx_cmd (SFRX);
-      cc_rx_cmd (SIDLE);
-      return COMMS_STATUS_NO_DATA;
-    }
-    return len;
-
+  do {
+    cc_rx_rd_reg (NUM_RXBYTES, &rx_n_bytes);
   }
+  while (rx_n_bytes < 2);
 
-  while (len - received > CC1120_RXFIFO_THR) {
+  /* One byte FIFO access */
+  cc_rx_rd_reg (SINGLE_RXFIFO, &frame_len);
+
+  /*
+   * Now that we have the frame length check if the FIFO should be dequeued
+   * multiple times or not
+   */
+  while (frame_len - received > CC1120_RXFIFO_THR) {
     /* Wait for the RX FIFO above threshold interrupt */
-    start_tick = HAL_GetTick ();
     timeout = 1;
-    /*Reset the flag */
-    rx_thr_flag = 0;
     while (HAL_GetTick () - start_tick < timeout_ms) {
       if (rx_thr_flag) {
 	timeout = 0;
@@ -446,6 +469,8 @@ cc_rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
 
     /* We can now dequeue CC1120_BYTES_IN_RX_FIF0 bytes */
     ret = cc_rx_spi_read_fifo (out + received, CC1120_BYTES_IN_RX_FIF0);
+    /*Reset the flag */
+    rx_thr_flag = 0;
 
     if (ret) {
       cc_rx_cmd (SFRX);
@@ -455,8 +480,38 @@ cc_rx_data_continuous (uint8_t *out, size_t len, size_t timeout_ms)
     received += CC1120_BYTES_IN_RX_FIF0;
   }
 
-  return len;
+  /* Wait for the packet end interrupt */
+  timeout = 1;
+  while (HAL_GetTick () - start_tick < timeout_ms) {
+    if (rx_finished_flag) {
+      timeout = 0;
+      break;
+    }
+  }
+  if (timeout) {
+    cc_rx_cmd (SFRX);
+    cc_rx_cmd (SIDLE);
+    return COMMS_STATUS_RXFIFO_ERROR;
+  }
+
+  /* Now dequeue the remaining bytes in the FIFO if any left*/
+  if (frame_len - received > 1) {
+    ret = cc_rx_spi_read_fifo (out + received, frame_len - received);
+    if (ret) {
+      cc_rx_cmd (SFRX);
+      cc_rx_cmd (SIDLE);
+      return COMMS_STATUS_NO_DATA;
+    }
+  }
+  else if (frame_len - received == 1) {
+    /* One byte FIFO access */
+    cc_rx_rd_reg (SINGLE_RXFIFO, out + received);
+  }
+  cc_rx_cmd (SFRX);
+  cc_rx_cmd (SIDLE);
+  return frame_len;
 }
+
 
 
 /**
@@ -473,11 +528,11 @@ cc_rx_spi_read_fifo(uint8_t *out, size_t len)
   memset(rx_spi_tx_buf, 0, sizeof(rx_spi_tx_buf));
   rx_spi_tx_buf[0] = BURST_RXFIFO;
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_RESET);
-  delay_us(32);
+  delay_us(4);
   /* Remove the response SPI byte */
   ret = HAL_SPI_TransmitReceive (&hspi2, rx_spi_tx_buf, rx_tmp_buf, len + 1,
 				 COMMS_DEFAULT_TIMEOUT_MS);
-  delay_us(32);
+  delay_us(4);
   HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15, GPIO_PIN_SET);
   memcpy(out, rx_tmp_buf + 1, len);
   return ret;
@@ -493,10 +548,11 @@ cc_rx_cmd (uint8_t CMDStrobe)
   aTxBuffer[0] = CMDStrobe;
 
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_RESET);
+  delay_us(4);
   HAL_SPI_TransmitReceive (&hspi2, (uint8_t*) aTxBuffer, (uint8_t *) aRxBuffer,
 			   1, COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
-
+  delay_us(4);
   return aRxBuffer[0];
 }
 
