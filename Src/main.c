@@ -205,7 +205,7 @@ int main(void)
     //debug_ecss();
 
     /*--------------TX------------*/
-    if(dbg_msg == 0)
+    if(dbg_msg == 1)
     {
       /* Send a dummy message towards earth */
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
@@ -247,11 +247,12 @@ int main(void)
 	LOG_UART_DBG(&huart5, "Invalid ECSS. Error %d", ret);
       }
     }
+    large_data_IDLE();
 #endif
 
     /*------------TEMP------------*/
 
-    large_data_IDLE();
+    //large_data_IDLE();
     //HAL_Delay (100);
   /* USER CODE END WHILE */
 
