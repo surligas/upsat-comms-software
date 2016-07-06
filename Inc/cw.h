@@ -24,15 +24,16 @@
  * The different CW symbols
  */
 typedef enum {
-  CW_DOT = 0,       //!< CW_DOT a dot (pulse of short duration)
-  CW_DASH = 1,      //!< CW_DASH a dash (pulse of long duration)
-  CW_CHAR_DELIM = 2,//!< CW_CHAR_DELIM character pause delimiter
-  CW_WORD_DELIM = 3 //!< CW_WORD_DELIM word pause delimiter
+  CW_DOT = 0,        //!< CW_DOT a dot (pulse of short duration)
+  CW_DASH = 1,       //!< CW_DASH a dash (pulse of long duration)
+  CW_CHAR_DELIM = 2, //!< CW_CHAR_DELIM character pause delimiter
+  CW_WORD_DELIM = 3, //!< CW_WORD_DELIM word pause delimiter
+  CW_INVALID = 4     //!< CW_INVALID invalid symbol
 } cw_symbol_t;
 
 
 typedef struct {
-  cw_symbol_t t[5];
+  cw_symbol_t s[5];
   uint8_t symbol_num;
 } cw_char_t;
 
