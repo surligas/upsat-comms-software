@@ -95,22 +95,89 @@ static const registerSetting_t TX_preferredSettings[]=
 		{MODCFG_DEV_E,       0x0B}
 };
 
+const registerSetting_t CW_preferredSettings[] =
+  {
+    { IOCFG3, 0xB0 },
+    { IOCFG2, 0x08 },
+    { IOCFG1, 0xB0 },
+    { IOCFG0, 0x09 },
+    { SYNC_CFG1, 0x0B },
+    { DEVIATION_M, 0x26 },
+    { MODCFG_DEV_E, 0x05 },
+    { DCFILT_CFG, 0x13 },
+    { PREAMBLE_CFG1, 0x00 },
+    { PREAMBLE_CFG0, 0x33 },
+    { IQIC, 0x00 },
+    { CHAN_BW, 0x03 },
+    { MDMCFG0, 0x04 },
+    { AGC_REF, 0x30 },
+    { AGC_CS_THR, 0xEC },
+    { AGC_CFG3, 0xD1 },
+    { AGC_CFG2, 0x3F },
+    { AGC_CFG1, 0x32 },
+    { AGC_CFG0, 0x9F },
+    { FIFO_CFG, 0x00 },
+    { FS_CFG, 0x14 },
+    { PKT_CFG2, 0x06 },
+    { PKT_CFG1, 0x00 },
+    { PKT_CFG0, 0x40 },
+    { PA_CFG2, 0x66 },
+    { PA_CFG0, 0x56 },
+    { IF_MIX_CFG, 0x00 },
+    { FREQOFF_CFG, 0x00 },
+    { TOC_CFG, 0x0A },
+    { CFM_DATA_CFG, 0x01 },
+    { FREQ2, 0x6C },
+    { FREQ1, 0xF1 },
+    { FREQ0, 0x2F },
+    { FS_DIG1, 0x00 },
+    { FS_DIG0, 0x5F },
+    { FS_CAL1, 0x40 },
+    { FS_CAL0, 0x0E },
+    { FS_DIVTWO, 0x03 },
+    { FS_DSM0, 0x33 },
+    { FS_DVC0, 0x17 },
+    { FS_PFD, 0x50 },
+    { FS_PRE, 0x6E },
+    { FS_REG_DIV_CML, 0x14 },
+    { FS_SPARE, 0xAC },
+    { FS_VCO0, 0xB4 },
+    { XOSC5, 0x0E },
+    { XOSC1, 0x03 },
+};
 
 
-void tx_registerConfig() {
-	unsigned char writeByte;
-	unsigned i;
-	// Reset radio
-	cc_tx_cmd(SRES);
+void
+tx_registerConfig ()
+{
+  unsigned char writeByte;
+  unsigned i;
+  // Reset radio
+  cc_tx_cmd (SRES);
 
-	// Write registers to radio
-	for(i = 0; i < (sizeof(TX_preferredSettings)/sizeof(registerSetting_t)); i++) {
-		writeByte = TX_preferredSettings[i].dat;
-		cc_tx_wr_reg(TX_preferredSettings[i].addr, writeByte);
-	}
+  // Write registers to radio
+  for (i = 0; i < (sizeof(TX_preferredSettings) / sizeof(registerSetting_t));
+      i++) {
+    writeByte = TX_preferredSettings[i].dat;
+    cc_tx_wr_reg (TX_preferredSettings[i].addr, writeByte);
+  }
 }
 
+void
+tx_cw_registerConfig ()
+{
+  unsigned char writeByte;
+  unsigned i;
+  // Reset radio
+  cc_tx_cmd (SRES);
 
+  // Write registers to radio
+  for (i = 0; i < (sizeof(CW_preferredSettings) / sizeof(registerSetting_t));
+      i++) {
+    writeByte = CW_preferredSettings[i].dat;
+    cc_tx_wr_reg (CW_preferredSettings[i].addr, writeByte);
+  }
+}
 
 
 

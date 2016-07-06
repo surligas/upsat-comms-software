@@ -23,6 +23,7 @@
 #include "log.h"
 #include "status.h"
 #include "scrambler.h"
+#include "cc_tx_init.h"
 #include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
@@ -162,6 +163,51 @@ cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
 				 COMMS_DEFAULT_TIMEOUT_MS);
   HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
   return ret;
+}
+
+
+static inline void
+set_tx_cw_regs()
+{
+  tx_cw_registerConfig();
+}
+
+static inline void
+set_tx_fsk_regs()
+{
+  tx_registerConfig();
+}
+
+
+int32_t
+cc_tx_cw(const cw_char_t *in, size_t len)
+{
+  size_t i;
+  uint8_t t[4] = {0, 0, 0, 0};
+  uint8_t t2[16] = {0, 0};
+
+  /* Set the CC1120 into unmodulated continuous FM mode */
+  set_tx_cw_regs();
+  cc_tx_cmd (SFTX);
+
+  /*At least one byte should be written at the FIFO */
+  cc_tx_spi_write_fifo (t, t2, 4);
+
+  /*
+   * FIXME: Add the proper functionality
+   */
+  for(i = 0; i < 4; i++) {
+    cc_tx_cmd (STX);
+    HAL_Delay(1000);
+    cc_tx_cmd (SIDLE);
+    HAL_Delay(1000);
+  }
+
+  /* Restore the FSK configuration */
+  set_tx_fsk_regs();
+  cc_tx_cmd (SIDLE);
+  cc_tx_cmd (SFTX);
+  return 0;
 }
 
 /**

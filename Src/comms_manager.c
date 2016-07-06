@@ -297,4 +297,6 @@ comms_init ()
 
   /* Initialize the TX and RX routines */
   rx_init();
+
+  large_data_init();
 }

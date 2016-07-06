@@ -28,5 +28,7 @@ void
 tx_manualCalibration ();
 void
 tx_registerConfig ();
+void
+tx_cw_registerConfig ();
 
 #endif
