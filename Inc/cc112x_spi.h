@@ -26,6 +26,7 @@
 #include "cc_commands.h"
 #include "config.h"
 #include "scrambler.h"
+#include "cw.h"
 
 #define CC_EXT_ADD 0x2F00
 
@@ -38,6 +39,8 @@ cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len);
 int32_t
 cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 		       size_t timeout_ms);
+int32_t
+cc_tx_cw(const cw_char_t *in, size_t len);
 uint8_t
 cc_tx_cmd (uint8_t CMDStrobe);
 

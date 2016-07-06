@@ -20,21 +20,43 @@
 #ifndef INC_CW_H_
 #define INC_CW_H_
 
+#include <stdlib.h>
+#include <stdint.h>
+
 /**
  * The different CW symbols
  */
 typedef enum {
-  CW_DOT = 0,        //!< CW_DOT a dot (pulse of short duration)
-  CW_DASH = 1,       //!< CW_DASH a dash (pulse of long duration)
-  CW_CHAR_DELIM = 2, //!< CW_CHAR_DELIM character pause delimiter
-  CW_WORD_DELIM = 3, //!< CW_WORD_DELIM word pause delimiter
-  CW_INVALID = 4     //!< CW_INVALID invalid symbol
+  CW_DOT = 0,          //!< CW_DOT a dot (pulse of short duration)
+  CW_DASH = 1,         //!< CW_DASH a dash (pulse of long duration)
+  CW_CHAR_DELIM = 2,   //!< CW_CHAR_DELIM character pause delimiter
+  CW_WORD_DELIM = 3,   //!< CW_WORD_DELIM word pause delimiter
+  CW_SYMBOL_DELIM = 4, //!< CW_SYMBOL_DELIM symbol pause delimiter
+  CW_INVALID = 5       //!< CW_INVALID invalid symbol
 } cw_symbol_t;
 
+/**
+ * The status of the CW encoding/transmission
+ */
+typedef enum {
+  CW_OK = 0,   //!< CW_OK all ok
+  CW_ERROR = -1//!< CW_ERROR an error occured
+} cw_status_t;
 
+/**
+ * A CW character and its mapping to CW symbols
+ */
 typedef struct {
-  cw_symbol_t s[5];
-  uint8_t symbol_num;
+  cw_symbol_t s[10];
+  uint8_t s_num;
+  uint8_t is_valid;
 } cw_char_t;
+
+
+void
+cw_init ();
+
+int32_t
+cw_encode(cw_char_t *out, const uint8_t *in, size_t len);
 
 #endif /* INC_CW_H_ */
