@@ -27,4 +27,7 @@ int32_t
 tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
 	size_t timeout_ms);
 
+int32_t
+tx_data_cw (const uint8_t *in, size_t len);
+
 #endif /* INC_TX_MANAGER_H_ */

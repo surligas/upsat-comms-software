@@ -134,8 +134,8 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   int32_t ret = 0;
-  int8_t temp;
   uint8_t rst_src;
+  uint32_t cw_tick;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -199,10 +199,20 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
+  cw_tick = HAL_GetTick();
   while (1) {
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
 
-    //debug_ecss();
+    /* Check if a CW beacon should be sent */
+    if(HAL_GetTick() - cw_tick > __CW_INTERVAL_MS ) {
+
+      /* Wait a little to finish the previous transmission if any */
+      HAL_Delay(1000);
+      ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
+		      "UPSAT %d", loop);
+      send_payload_cw(payload, ret);
+      cw_tick = HAL_GetTick();
+    }
 
     /*--------------TX------------*/
     if(dbg_msg == 1)

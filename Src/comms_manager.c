@@ -30,6 +30,7 @@
 #include "service_utilities.h"
 #include "comms.h"
 #include "verification_service.h"
+#include "large_data_service.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 25
@@ -150,7 +151,7 @@ handle_ecss_payload(const uint8_t *payload, size_t len)
 
   pkt = get_pkt (len);
 
-  if (!C_ASSERT(pkt != NULL) == true) {
+  if (C_ASSERT(pkt == NULL)) {
     return COMMS_STATUS_NO_DATA;
   }
 
@@ -219,7 +220,7 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
 
 /**
  * Send a payload using AX.25 encoding
- * @param in the payoload buffer
+ * @param in the payload buffer
  * @param len the length of the payload in bytes
  * @param timeout_ms the timeout limit in milliseconds
  * @return number of bytes sent or appropriate error code
@@ -240,6 +241,30 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
 
   memset(spi_buf, 0, sizeof(spi_buf));
   ret = tx_data(in, len, spi_buf, timeout_ms);
+  return ret;
+}
+
+/**
+ * Sends a payload using CW Morse code
+ * @param in the payload buffer
+ * @param len the length of the payload in bytes
+ * @return the number of bytes sent or an appropriate error code
+ */
+int32_t
+send_payload_cw(const uint8_t *in, size_t len)
+{
+  int32_t ret;
+
+  if(len > AX25_MAX_FRAME_LEN) {
+    return COMMS_STATUS_BUFFER_OVERFLOW;
+  }
+
+  /* Check if the TX is enabled */
+  if(!is_tx_enabled()){
+    return COMMS_STATUS_RF_OFF;
+  }
+
+  ret = tx_data_cw(in, len);
   return ret;
 }
 
@@ -297,6 +322,7 @@ comms_init ()
 
   /* Initialize the TX and RX routines */
   rx_init();
+  cw_init();
 
   large_data_init();
 }

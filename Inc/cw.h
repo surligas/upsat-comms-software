@@ -23,6 +23,18 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define CW_DOT_DURATION_MS 60
+#define CW_DASH_DURATION_MS (3*CW_DOT_DURATION_MS)
+#define CW_SYMBOL_SPACE_MS CW_DOT_DURATION_MS
+#define CW_CHAR_SPACE_MS (3*CW_DOT_DURATION_MS)
+
+/*
+ * NOTE: Normally the ITU word space is 7 dots long. However our encoder
+ * applies a char character after each character. So at the end of a word
+ * a space with duration of 4 more dots should be applied.
+ */
+#define CW_WORD_SPACE_MS (4*CW_DOT_DURATION_MS)
+
 /**
  * The different CW symbols
  */
@@ -35,6 +47,10 @@ typedef enum {
   CW_INVALID = 5       //!< CW_INVALID invalid symbol
 } cw_symbol_t;
 
+typedef struct {
+  uint8_t cw_on;
+  uint32_t duration_ms;
+} cw_pulse_t;
 /**
  * The status of the CW encoding/transmission
  */
@@ -57,6 +73,6 @@ void
 cw_init ();
 
 int32_t
-cw_encode(cw_char_t *out, const uint8_t *in, size_t len);
+cw_encode(cw_pulse_t *out, size_t *out_len, const uint8_t *in, size_t len);
 
 #endif /* INC_CW_H_ */
