@@ -21,9 +21,10 @@
 #include "ax25.h"
 #include "cc112x_spi.h"
 #include "status.h"
-
+#include "cw.h"
 
 static uint8_t tmp_buf[AX25_PREAMBLE_LEN + 2 * AX25_MAX_FRAME_LEN];
+static cw_pulse_t cw_buf[AX25_MAX_FRAME_LEN * 10];
 
 /**
  * This routine sends the data using the AX.25 encapsulation
@@ -57,6 +58,32 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
   ret = cc_tx_data_continuous(tmp_buf, ret, dev_rx_buffer, timeout_ms);
   if(ret < 1){
     return ret;
+  }
+  return len;
+}
+
+int32_t
+tx_data_cw (const uint8_t *in, size_t len)
+{
+  int32_t ret = 0;
+  size_t symbols_num;
+  /* This routine can not handle large payloads */
+  if (len == 0) {
+    return COMMS_STATUS_NO_DATA;
+  }
+
+  if (len > AX25_MAX_FRAME_LEN) {
+    return COMMS_STATUS_BUFFER_OVERFLOW;
+  }
+
+  ret = cw_encode(cw_buf, &symbols_num, in, len);
+  if(ret != CW_OK){
+    return COMMS_STATUS_INVALID_FRAME;
+  }
+
+  ret = cc_tx_cw(cw_buf, symbols_num);
+  if(ret != CW_OK) {
+    return COMMS_STATUS_INVALID_FRAME;
   }
   return len;
 }

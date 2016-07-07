@@ -39,7 +39,6 @@ static uint8_t tx_frag_buf[2 + CC1120_TX_FIFO_SIZE];
 static uint8_t rx_spi_tx_buf[2 + CC1120_RX_FIFO_SIZE];
 static uint8_t rx_tmp_buf[2 + CC1120_RX_FIFO_SIZE];
 
-
 /**
  * Delay for \p us microseconds.
  * NOTE: This delay function is not so accurate!!!
@@ -180,7 +179,7 @@ set_tx_fsk_regs()
 
 
 int32_t
-cc_tx_cw(const cw_char_t *in, size_t len)
+cc_tx_cw(const cw_pulse_t *in, size_t len)
 {
   size_t i;
   uint8_t t[4] = {0, 0, 0, 0};
@@ -194,20 +193,25 @@ cc_tx_cw(const cw_char_t *in, size_t len)
   cc_tx_spi_write_fifo (t, t2, 4);
 
   /*
-   * FIXME: Add the proper functionality
+   * Switch on and off the carrier for the proper amount of time
    */
-  for(i = 0; i < 4; i++) {
-    cc_tx_cmd (STX);
-    HAL_Delay(1000);
-    cc_tx_cmd (SIDLE);
-    HAL_Delay(1000);
+  for(i = 0; i < len; i++) {
+    if(in[i].cw_on){
+      cc_tx_cmd (STX);
+      HAL_Delay(in[i].duration_ms);
+      cc_tx_cmd (SIDLE);
+    }
+    else{
+      HAL_Delay(in[i].duration_ms);
+    }
   }
+  cc_tx_cmd (SIDLE);
 
   /* Restore the FSK configuration */
   set_tx_fsk_regs();
   cc_tx_cmd (SIDLE);
   cc_tx_cmd (SFTX);
-  return 0;
+  return CW_OK;
 }
 
 /**

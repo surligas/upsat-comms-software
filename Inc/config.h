@@ -69,6 +69,11 @@ static const uint32_t __SCRAMBLER_SEED = 0x00;
 static const uint32_t __SCRAMBLER_ORDER = 16;
 
 /**
+ * The interval of the CW beacon
+ */
+static const uint32_t __CW_INTERVAL_MS = 40000;
+
+/**
  * Enables/disables the UART debug
  */
 #define COMMS_UART_DBG_EN 1

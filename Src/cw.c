@@ -21,18 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CW_DOT_DURATION_MS 200
-#define CW_DASH_DURATION_MS (3*CW_DOT_DURATION_MS)
-#define CW_SYMBOL_SPACE_MS CW_DOT_DURATION_MS
-#define CW_CHAR_SPACE_MS (3*CW_DOT_DURATION_MS)
-
-/*
- * NOTE: Normally the ITU word space is 7 dots long. However our encoder
- * applies a char character after each character. So at the end of a word
- * a space with duration of 4 more dots should be applied.
- */
-#define CW_WORD_SPACE_MS (4*CW_DOT_DURATION_MS)
-
 static cw_char_t cw_lut[256];
 
 /**
@@ -45,23 +33,39 @@ static const uint32_t cw_duration_lut[6] =
 
 
 /**
- * Converts the input characters into CW Morse symbols
- * @param out the output buffer with the CW symbols
+ * Converts the input characters into CW Morse on-off symbols
+ * @param out the output buffer with the CW on-off symbols
+ * @param out_len the number of the resulting on-off symbols
  * @param in the input buffer
- * @param len the output buffer
+ * @param len the input buffer length
  * @return CW_OK if the encoding was successful or CW_ERROR if an illegal
  * character was encountered.
  */
 int32_t
-cw_encode(cw_char_t *out, const uint8_t *in, size_t len)
+cw_encode(cw_pulse_t *out, size_t *out_len, const uint8_t *in, size_t len)
 {
   size_t i;
+  size_t j;
+  size_t pulse_cnt = 0;
+  cw_char_t c;
   for(i = 0; i < len; i++) {
-    out[i] = cw_lut[in[i]];
-    if(!out[i].is_valid){
+    c = cw_lut[in[i]];
+    if(!c.is_valid){
       return CW_ERROR;
     }
+    for(j = 0; j < c.s_num; j++){
+      if(c.s[j] == CW_DOT || c.s[j] == CW_DASH){
+	out[pulse_cnt].cw_on = 1;
+      }
+      else{
+	out[pulse_cnt].cw_on = 0;
+      }
+      /* Set the duration */
+      out[pulse_cnt].duration_ms = cw_duration_lut[c.s[j]];
+      pulse_cnt++;
+    }
   }
+  *out_len = pulse_cnt;
   return CW_OK;
 }
 
