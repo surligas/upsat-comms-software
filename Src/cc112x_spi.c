@@ -55,25 +55,31 @@ delay_us (uint32_t us)
   while (start < cycles);
 }
 
+/**
+ * Reads a register from the TX CC1120
+ * @param addr the desired register address
+ * @param data memory to store the value of the register
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
-cc_tx_rd_reg (uint16_t add, uint8_t *data)
+cc_tx_rd_reg (uint16_t addr, uint8_t *data)
 {
   uint8_t temp_TxBuffer[4];
   uint8_t temp_RxBuffer[4] = { 0, 0, 0, 0 };
   uint8_t len = 0;
 
-  if (add >= CC_EXT_ADD) {
+  if (addr >= CC_EXT_ADD) {
     len = 3;
 
     temp_TxBuffer[0] = 0xAF;
-    temp_TxBuffer[1] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[1] = (uint8_t) (0x00FF & addr);
     temp_TxBuffer[2] = 0;
   }
   else {
     len = 2;
     /* bit masked for read function */
-    add |= 0x0080;
-    temp_TxBuffer[0] = (uint8_t) (0x00FF & add);
+    addr |= 0x0080;
+    temp_TxBuffer[0] = (uint8_t) (0x00FF & addr);
     temp_TxBuffer[1] = 0;
   }
 
@@ -87,26 +93,31 @@ cc_tx_rd_reg (uint16_t add, uint8_t *data)
   return temp_RxBuffer[0];
 }
 
+/**
+ * Writes a value to a register of the TX CC1120
+ * @param addr the address of the register
+ * @param data the data to be written
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
-cc_tx_wr_reg (uint16_t add, uint8_t data)
+cc_tx_wr_reg (uint16_t addr, uint8_t data)
 {
 
   uint8_t aTxBuffer[4];
-  uint8_t aRxBuffer[4] =
-    { 0, 0, 0, 0 };
+  uint8_t aRxBuffer[4] = { 0, 0, 0, 0 };
   uint8_t len = 0;
 
-  if (add >= CC_EXT_ADD) {
+  if (addr >= CC_EXT_ADD) {
     len = 3;
 
     aTxBuffer[0] = 0x2F;
-    aTxBuffer[1] = (uint8_t) (0x00FF & add);
+    aTxBuffer[1] = (uint8_t) (0x00FF & addr);
     aTxBuffer[2] = data;
   }
   else {
     len = 2;
 
-    aTxBuffer[0] = (uint8_t) (0x00FF & add);
+    aTxBuffer[0] = (uint8_t) (0x00FF & addr);
     aTxBuffer[1] = data;
   }
 
@@ -119,6 +130,11 @@ cc_tx_wr_reg (uint16_t add, uint8_t data)
   return aRxBuffer[0];
 }
 
+/**
+ * Executes a command at the TX CC1120
+ * @param CMDStrobe the command code
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
 cc_tx_cmd (uint8_t CMDStrobe)
 {
@@ -164,20 +180,31 @@ cc_tx_spi_write_fifo(const uint8_t *data, uint8_t *spi_rx_data, size_t len)
   return ret;
 }
 
-
+/**
+ * Sets the register configuration for CW transmission
+ */
 static inline void
 set_tx_cw_regs()
 {
   tx_cw_registerConfig();
 }
 
+/**
+ * Sets the register configuration for FSK transmission
+ */
 static inline void
 set_tx_fsk_regs()
 {
   tx_registerConfig();
 }
 
-
+/**
+ * Transmits data using CW
+ * @param in an array containing the CW symbols that should be sent
+ * @param len the length of the array
+ * @return CW_OK on success of an appropriate negative number with the
+ * appropriate error
+ */
 int32_t
 cc_tx_cw(const cw_pulse_t *in, size_t len)
 {
@@ -345,9 +372,14 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
   return gone + in_fifo;
 }
 
-
+/**
+ * Reads a register from the RX CC1120 chip
+ * @param addr the desired register address
+ * @param data memory to store the value of the register
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
-cc_rx_rd_reg (uint16_t add, uint8_t *data)
+cc_rx_rd_reg (uint16_t addr, uint8_t *data)
 {
 
   uint8_t temp_TxBuffer[4];
@@ -355,21 +387,21 @@ cc_rx_rd_reg (uint16_t add, uint8_t *data)
     { 0, 0, 0, 0 };
   uint8_t len = 0;
 
-  if (add >= CC_EXT_ADD) {
+  if (addr >= CC_EXT_ADD) {
     len = 3;
 
     temp_TxBuffer[0] = 0xAF;
     /* extended address */
-    temp_TxBuffer[1] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[1] = (uint8_t) (0x00FF & addr);
     /* send dummy so that i can read data */
     temp_TxBuffer[2] = 0;
   }
   else {
     len = 2;
     /*bit masked for read function*/
-    add |= 0x0080;
+    addr |= 0x0080;
     /* extended address */
-    temp_TxBuffer[0] = (uint8_t) (0x00FF & add);
+    temp_TxBuffer[0] = (uint8_t) (0x00FF & addr);
     temp_TxBuffer[1] = 0;
   }
 
@@ -403,6 +435,12 @@ cc_rx_spi_write_fifo(uint8_t *data, uint8_t *spi_rx_data, size_t len)
   return ret;
 }
 
+/**
+ * Writes a value to a register of the RX CC1120
+ * @param addr the address of the register
+ * @param data the data to be written
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
 cc_rx_wr_reg (uint16_t add, uint8_t data)
 {
@@ -438,6 +476,9 @@ cc_rx_wr_reg (uint16_t add, uint8_t data)
   return aRxBuffer[0];
 }
 
+/**
+ * Resets all the RX related IRQs
+ */
 static inline void
 cc_rx_reset_irqs()
 {
@@ -591,6 +632,11 @@ cc_rx_spi_read_fifo(uint8_t *out, size_t len)
   return ret;
 }
 
+/**
+ * Executes a command at the TX CC1120
+ * @param CMDStrobe the command code
+ * @return the first byte of the SPI buffer. Can be used for error checking
+ */
 uint8_t
 cc_rx_cmd (uint8_t CMDStrobe)
 {
