@@ -59,6 +59,14 @@ lfsr_next_bit(lfsr_handle_t *h)
   return out_bit;
 }
 
+/**
+ * Feeds the LFSR with the input bit and return the scrambled output
+ * @param h the LFSR handle. Should be a VALID LFSR handle and it is
+ * responsibility of the caller to ensure this. Otherwise the result is
+ * undefined.
+ * @param bit the input bit. Should be placed at LS bit.
+ * @return the scrambled bit, placed at the LS bit of the output byte.
+ */
 uint8_t
 lfsr_next_bit_scramble(lfsr_handle_t *h, uint8_t bit)
 {
@@ -70,6 +78,14 @@ lfsr_next_bit_scramble(lfsr_handle_t *h, uint8_t bit)
   return out_bit;
 }
 
+/**
+ * Feeds the LFSR with the input bit and return the descrambled output
+ * @param h the LFSR handle. Should be a VALID LFSR handle and it is
+ * responsibility of the caller to ensure this. Otherwise the result is
+ * undefined.
+ * @param bit the input bit. Should be placed at LS bit.
+ * @return the descrambled bit, placed at the LS bit of the output byte.
+ */
 uint8_t
 lfsr_next_bit_descramble(lfsr_handle_t *h, uint8_t bit)
 {

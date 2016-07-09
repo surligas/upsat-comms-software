@@ -62,6 +62,12 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
   return len;
 }
 
+/**
+ * Sends data over the air using CW
+ * @param in the input data
+ * @param len the length of the input data
+ * @return the number of the bytes sent or an appropriate negative error code
+ */
 int32_t
 tx_data_cw (const uint8_t *in, size_t len)
 {

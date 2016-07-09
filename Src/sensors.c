@@ -16,7 +16,8 @@ struct _temp_sensor
   uint32_t timestamp;
 };
 
-static struct _temp_sensor temp_sensor = { .temp_raw = 0, .temp_c = 0.0, .timestamp = 0 };
+static struct _temp_sensor temp_sensor =
+  { .temp_raw = 0, .temp_c = 0.0, .timestamp = 0 };
 
 /* Init ADT7420 */
 void
@@ -89,13 +90,13 @@ get_raw_adt7420 ()
 float
 get_temp_adt7420 ()
 {
-    return temp_sensor.temp_c;
+  return temp_sensor.temp_c;
 }
 
 uint32_t
 get_timestamp_adt7420 ()
 {
-    return temp_sensor.timestamp;
+  return temp_sensor.timestamp;
 }
 
 int32_t

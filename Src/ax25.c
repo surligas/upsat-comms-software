@@ -260,6 +260,17 @@ ax25_decoder_enter_frame_end(ax25_handle_t *h)
   h->dec_byte = 0x0;
 }
 
+/**
+ * This function tries to find a valid AX.25 frame. Consecutive calls of this
+ * function will continue the decoding of a frame.
+ * @param h the AX.25 handle
+ * @param out the output buffer
+ * @param out_len the length of the decoded frame, if any
+ * @param ax25_frame buffer containing the received bits
+ * @param len the length of the \p ax25_frame buffer
+ * @return AX25_DEC_NOT_READY if yet no AX.25 frame received or
+ * AX25_DEC_OK if an AX.25 frame succesfully retrived.
+ */
 ax25_decode_status_t
 ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	     const uint8_t *ax25_frame, size_t len)
@@ -352,6 +363,20 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
   return AX25_DEC_NOT_READY;
 }
 
+/**
+ * Prepared the AX.25 bit-stream that should be sent over the air.
+ * The data are scrambled using the G3RUH self-synchronizing scrambler and
+ * then are NRZI encoded. Also as AX.25 dictates that the LS bits should be
+ * sent first, this function properly swap the bits in every bit. So the
+ * transmitting routing should sent the bits MS bit first. This is performed
+ * for user convenient due to the fact that most teleccomunication systems
+ * send the MS first.
+ *
+ * @param out the output buffer that will hold the encoded data
+ * @param in the input data containing the payload
+ * @param len the length of the input data
+ * @return the length of the encoded data or -1 in case of error
+ */
 int32_t
 ax25_send(uint8_t *out, const uint8_t *in, size_t len)
 {

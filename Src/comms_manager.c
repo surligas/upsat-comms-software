@@ -143,33 +143,6 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
   return 0;
 }
 
-static inline int32_t
-handle_ecss_payload(const uint8_t *payload, size_t len)
-{
-  SAT_returnState ret;
-  tc_tm_pkt *pkt;
-
-  pkt = get_pkt (len);
-
-  if (C_ASSERT(pkt == NULL)) {
-    return COMMS_STATUS_NO_DATA;
-  }
-
-  /*
-   * Proceed with the ECSS packet processing
-   */
-  if (unpack_pkt (payload, pkt, len) == SATR_OK) {
-    /* Check if the received ECSS is a part of a large data transfer */
-
-    ret = route_pkt (pkt);
-  }
-  else {
-    verification_app (pkt);
-    ret = free_pkt (pkt);
-  }
-  return ret;
-}
-
 /**
  * This function receives a valid frame from the uplink interface and extracts
  * its payload.

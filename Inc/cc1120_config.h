@@ -20,6 +20,17 @@
 #ifndef INC_CC1120_CONFIG_H_
 #define INC_CC1120_CONFIG_H_
 
+typedef struct
+{
+  unsigned int addr;
+  unsigned short dat;
+} registerSetting_t;
+
+#define VCDAC_START_OFFSET 2
+#define FS_VCO2_INDEX 0
+#define FS_VCO4_INDEX   1
+#define FS_CHP_INDEX   2
+
 /*****************************************************************************
  ********************* TX related definitions ********************************
  ****************************************************************************/
