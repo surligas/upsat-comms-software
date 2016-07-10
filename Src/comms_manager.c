@@ -31,6 +31,7 @@
 #include "comms.h"
 #include "verification_service.h"
 #include "large_data_service.h"
+#include "sensors.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 25
@@ -298,4 +299,7 @@ comms_init ()
   cw_init();
 
   large_data_init();
+
+  /* Initialize temperature sensor */
+  init_adt7420 ();
 }

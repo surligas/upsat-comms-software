@@ -67,7 +67,7 @@ CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 64K
 
 /* Define output sections */
 SECTIONS
-{
+{  
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
@@ -75,6 +75,15 @@ SECTIONS
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
   } >FLASH
+  
+    /* Placing of the COMMS flash storage */
+  .comms_storage_section 0x0800C000 :
+  {
+    . = ALIGN(4);
+    KEEP(*(.comms_storage_section)) /* keep variable even if not referenced */
+    . = ALIGN(4);
+  } >FLASH
+  
 
   /* The program code and other data goes into FLASH */
   .text :
