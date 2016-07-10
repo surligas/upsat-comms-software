@@ -182,8 +182,6 @@ int main(void)
 
   HAL_Delay (100);
 
-  init_adt7420 ();
-
   pkt_pool_INIT ();
 
   uint16_t size = 0;
@@ -196,7 +194,7 @@ int main(void)
 
   /* Sent to OBC the reason of re-booting */
   HAL_reset_source(&rst_src);
-  event_boot(rst_src);
+  event_boot(rst_src, 0);
 
   /* USER CODE END 2 */
 
@@ -207,6 +205,7 @@ int main(void)
   while (1) {
     HAL_IWDG_Refresh(&hiwdg);
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
+    export_pkt (OBC_APP_ID, &comms_data.obc_uart);
 
     /* Check if a CW beacon should be sent */
     if(HAL_GetTick() - cw_tick > __CW_INTERVAL_MS ) {
@@ -265,10 +264,9 @@ int main(void)
     large_data_IDLE();
 #endif
 
-    /*------------TEMP------------*/
+    /* Update the temperature readings */
+    update_adt7420();
 
-    //large_data_IDLE();
-    //HAL_Delay (100);
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */

@@ -66,7 +66,9 @@ update_adt7420 ()
             i2c_temp, 1, ADT7420_TIMEOUT);
   lsb = i2c_temp[0];
 
-  if(resM != HAL_OK || resL != HAL_OK ) { return 0; }
+  if (resM != HAL_OK || resL != HAL_OK) {
+    return 0.0;
+  }
 
   temp_sensor.temp_raw = msb << 8;
   temp_sensor.temp_raw |= lsb;
