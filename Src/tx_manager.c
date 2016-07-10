@@ -31,7 +31,7 @@ static cw_pulse_t cw_buf[AX25_MAX_FRAME_LEN * 10];
  * @param in the input buffer containing the raw data
  * @param len the length of the input buffer
  * @param dev_rx_buffer a buffer that will hold the SPI resulting bytes
- * @param timeout_ms the timeout in miliseconds
+ * @param timeout_ms the timeout in milliseconds
  * @return the number of bytes sent or appropriate error code
  */
 int32_t

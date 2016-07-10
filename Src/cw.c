@@ -70,6 +70,200 @@ cw_encode(cw_pulse_t *out, size_t *out_len, const uint8_t *in, size_t len)
 }
 
 /**
+ * Get the CW character that corresponds to the uptime days
+ * @param h a valid pointer to a \p comms_rf_stat_t struct.
+ * @return CW character that corresponds to the uptime days. If the pointer
+ * is invalid the no data character ('0') will be returned.
+ */
+char
+cw_get_uptime_hours_char (comms_rf_stat_t *h)
+{
+  char ret = '0';
+  if (h == NULL) {
+    return '0';
+  }
+
+  if (h->uptime_h < 1) {
+    ret = 'A';
+  }
+  else if (h->uptime_h < 2) {
+    ret = 'B';
+  }
+  else if (h->uptime_h < 3) {
+    ret = 'C';
+  }
+  else if (h->uptime_h < 4) {
+    ret = 'D';
+  }
+  else if (h->uptime_h < 5) {
+    ret = 'E';
+  }
+  else if (h->uptime_h < 6) {
+    ret = 'F';
+  }
+  else if (h->uptime_h < 8) {
+    ret = 'G';
+  }
+  else if (h->uptime_h < 10) {
+    ret = 'H';
+  }
+  else if (h->uptime_h < 10) {
+    ret = 'H';
+  }
+  else if (h->uptime_h < 12) {
+    ret = 'I';
+  }
+  else if (h->uptime_h < 16) {
+    ret = 'J';
+  }
+  else if (h->uptime_h < 20) {
+    ret = 'K';
+  }
+  else if (h->uptime_h < 24) {
+    ret = 'L';
+  }
+  else if (h->uptime_h < 30) {
+    ret = 'M';
+  }
+  else if (h->uptime_h < 36) {
+    ret = 'N';
+  }
+  else if (h->uptime_h < 44) {
+    ret = 'O';
+  }
+  else if (h->uptime_h < 52) {
+    ret = 'P';
+  }
+  else if (h->uptime_h < 60) {
+    ret = 'Q';
+  }
+  else if (h->uptime_h < 70) {
+    ret = 'R';
+  }
+  else if (h->uptime_h < 80) {
+    ret = 'S';
+  }
+  else if (h->uptime_h < 90) {
+    ret = 'T';
+  }
+  else if (h->uptime_h < 100) {
+    ret = 'U';
+  }
+  else if (h->uptime_h < 150) {
+    ret = 'V';
+  }
+  else if (h->uptime_h < 200) {
+    ret = 'W';
+  }
+  else if (h->uptime_h < 300) {
+    ret = 'X';
+  }
+  else if (h->uptime_h < 400) {
+    ret = 'Y';
+  }
+  else {
+    ret = 'Z';
+  }
+  return ret;
+}
+
+/**
+ * Get the CW character that corresponds to the uptime days
+ * @param h a valid pointer to a \p comms_rf_stat_t struct.
+ * @return CW character that corresponds to the uptime days. If the pointer
+ * is invalid the no data character ('0') will be returned.
+ */
+char
+cw_get_uptime_mins_char (comms_rf_stat_t *h)
+{
+  char ret = '0';
+
+  if (h == NULL) {
+    return '0';
+  }
+
+  if (h->uptime_m < 1) {
+    ret =  'A';
+  }
+  else if (h->uptime_m < 2) {
+    ret =  'B';
+  }
+  else if (h->uptime_m < 3) {
+    ret =  'C';
+  }
+  else if (h->uptime_m < 4) {
+    ret =  'D';
+  }
+  else if (h->uptime_m < 5) {
+    ret =  'E';
+  }
+  else if (h->uptime_m < 6) {
+    ret =  'F';
+  }
+  else if (h->uptime_m < 7) {
+    ret =  'G';
+  }
+  else if (h->uptime_m < 8) {
+    ret =  'H';
+  }
+  else if (h->uptime_m < 9) {
+    ret =  'I';
+  }
+  else if (h->uptime_m < 10) {
+    ret =  'J';
+  }
+  else if (h->uptime_m < 11) {
+    ret =  'K';
+  }
+  else if (h->uptime_m < 12) {
+    ret =  'L';
+  }
+  else if (h->uptime_m < 14) {
+    ret =  'M';
+  }
+  else if (h->uptime_m < 16) {
+    ret =  'N';
+  }
+  else if (h->uptime_m < 18) {
+    ret =  'O';
+  }
+  else if (h->uptime_m < 20) {
+    ret =  'P';
+  }
+  else if (h->uptime_m < 24) {
+    ret =  'Q';
+  }
+  else if (h->uptime_m < 28) {
+    ret =  'R';
+  }
+  else if (h->uptime_m < 32) {
+    ret =  'S';
+  }
+  else if (h->uptime_m < 36) {
+    ret =  'T';
+  }
+  else if (h->uptime_m < 40) {
+    ret =  'U';
+  }
+  else if (h->uptime_m < 44) {
+    ret =  'V';
+  }
+  else if (h->uptime_m < 48) {
+    ret =  'W';
+  }
+  else if (h->uptime_m < 52) {
+    ret =  'X';
+  }
+  else if (h->uptime_m < 56) {
+    ret =  'Y';
+  }
+  else {
+    ret =  'Z';
+  }
+  return ret;
+}
+
+/**
  * Initializes the internal structures for CW encoding.
  *
  * The CW code is based at the ITU international Morse code
