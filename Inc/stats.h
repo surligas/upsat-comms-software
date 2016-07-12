@@ -43,4 +43,11 @@ comms_rf_stats_init(comms_rf_stat_t *h);
 void
 comms_rf_stats_update(comms_rf_stat_t *h);
 
+void
+comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
+			      int32_t error);
+
+void
+comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
+				 int32_t error);
 #endif /* INC_STATS_H_ */

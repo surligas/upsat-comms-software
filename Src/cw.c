@@ -263,6 +263,233 @@ cw_get_uptime_mins_char (comms_rf_stat_t *h)
   return ret;
 }
 
+char
+cw_get_temp_char(comms_rf_stat_t *h)
+{
+  char ret = '0';
+
+  if (h == NULL) {
+    return '0';
+  }
+
+  float temp = h->temperature;
+  if (temp < -10.0) {
+    ret =  'A';
+  }
+  else if (temp < -8.0) {
+    ret =  'B';
+  }
+  else if (temp < -6.0) {
+    ret =  'C';
+  }
+  else if (temp < -4.0) {
+    ret =  'D';
+  }
+  else if (temp < -2.0) {
+    ret =  'E';
+  }
+  else if (temp < 0.0) {
+    ret =  'F';
+  }
+  else if (temp < 2.0) {
+    ret =  'G';
+  }
+  else if (temp < 4.0) {
+    ret =  'H';
+  }
+  else if (temp < 6.0) {
+    ret =  'I';
+  }
+  else if (temp < 8.0) {
+    ret =  'J';
+  }
+  else if (temp < 10.0) {
+    ret =  'K';
+  }
+  else if (temp < 12.0) {
+    ret =  'L';
+  }
+  else if (temp < 14.0) {
+    ret =  'M';
+  }
+  else if (temp < 16.0) {
+    ret =  'N';
+  }
+  else if (temp < 20.0) {
+    ret =  'O';
+  }
+  else if (temp < 24.0) {
+    ret =  'P';
+  }
+  else if (temp < 28.0) {
+    ret =  'Q';
+  }
+  else if (temp < 32.0) {
+    ret =  'R';
+  }
+  else if (temp < 36.0) {
+    ret =  'S';
+  }
+  else if (temp < 40.0) {
+    ret =  'T';
+  }
+  else if (temp < 42.0) {
+    ret =  'U';
+  }
+  else if (temp < 44.0) {
+    ret =  'V';
+  }
+  else if (temp < 46.0) {
+    ret =  'W';
+  }
+  else if (temp < 48.0) {
+    ret =  'X';
+  }
+  else if (temp < 50.0) {
+    ret =  'Y';
+  }
+  else {
+    ret =  'Z';
+  }
+  return ret;
+}
+
+char
+cw_get_cont_errors_char(comms_rf_stat_t *h)
+{
+  size_t err_tx;
+  size_t err_rx;
+  char ret = '0';
+
+  if (h == NULL) {
+    return '0';
+  }
+
+  err_tx = h->tx_frames_cnt;
+  err_rx = h->rx_frames_cnt;
+
+  if(err_tx == 0 && err_rx == 0){
+    ret = 'A';
+  }
+  else if(err_tx == 1 && err_rx == 0){
+    ret = 'B';
+  }
+  else if(err_tx == 2 && err_rx == 0){
+    ret = 'C';
+  }
+  else if(err_tx > 2 && err_rx == 0){
+    ret = 'D';
+  }
+  if(err_tx == 0 && err_rx == 1){
+    ret = 'E';
+  }
+  else if(err_tx == 1 && err_rx == 1){
+    ret = 'F';
+  }
+  else if(err_tx == 2 && err_rx == 1){
+    ret = 'G';
+  }
+  else if(err_tx > 2 && err_rx == 1){
+    ret = 'H';
+  }
+  if(err_tx == 0 && err_rx == 2){
+    ret = 'I';
+  }
+  else if(err_tx == 1 && err_rx == 2){
+    ret = 'J';
+  }
+  else if(err_tx == 2 && err_rx == 2){
+    ret = 'K';
+  }
+  else if(err_tx > 2 && err_rx == 2){
+    ret = 'L';
+  }
+  if(err_tx == 0 && err_rx > 2){
+    ret = 'M';
+  }
+  else if(err_tx == 1 && err_rx > 2){
+    ret = 'N';
+  }
+  else if(err_tx == 2 && err_rx > 2){
+    ret = 'O';
+  }
+  else if(err_tx > 2 && err_rx > 2){
+    ret = 'P';
+  }
+  else{
+    ret = 'Z';
+  }
+  return ret;
+}
+
+char
+cw_get_last_error_char(comms_rf_stat_t *h)
+{
+  int32_t err_code;
+  char ret = '0';
+
+  if (h == NULL) {
+    return '0';
+  }
+  err_code = h->last_error_code;
+
+  if(err_code == -9){
+    ret = 'A';
+  }
+  else if(err_code == -8){
+    ret = 'B';
+  }
+  else if(err_code == -7){
+    ret = 'C';
+  }
+  else if(err_code == -6){
+    ret = 'D';
+  }
+  else if(err_code == -5){
+    ret = 'E';
+  }
+  else if(err_code == -4){
+    ret = 'F';
+  }
+  else if(err_code == -3){
+    ret = 'G';
+  }
+  else if(err_code == -2){
+    ret = 'H';
+  }
+  else if(err_code == -1){
+    ret = 'I';
+  }
+  else if(err_code == -56){
+    ret = 'J';
+  }
+  else if(err_code == -55){
+    ret = 'K';
+  }
+  else if(err_code == -54){
+    ret = 'L';
+  }
+  else if(err_code == -53){
+    ret = 'M';
+  }
+  else if(err_code == -52){
+    ret = 'N';
+  }
+  else if(err_code == -51){
+    ret = 'O';
+  }
+  else if(err_code == -61){
+    ret = 'P';
+  }
+  else if(err_code == 0){
+    ret = 'Z';
+  }
+  else{
+    ret = 'Q';
+  }
+  return ret;
+}
+
 /**
  * Initializes the internal structures for CW encoding.
  *
