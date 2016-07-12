@@ -47,9 +47,13 @@
 #include "service_utilities.h"
 #include "comms_manager.h"
 #include "sensors.h"
+#include "stats.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+ADC_HandleTypeDef hadc1;
+DMA_HandleTypeDef hdma_adc1;
+
 I2C_HandleTypeDef hi2c1;
 
 IWDG_HandleTypeDef hiwdg;
@@ -87,8 +91,9 @@ volatile uint8_t rx_finished_flag = 0;
 volatile uint8_t rx_thr_flag = 0;
 
 uint8_t dbg_msg = 0;
-
 uint8_t uart_temp[200];
+
+comms_rf_stat_t comms_stats;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -101,6 +106,7 @@ static void MX_SPI2_Init(void);
 static void MX_UART5_Init(void);
 static void MX_USART3_UART_Init(void);
 static void MX_IWDG_Init(void);
+static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -158,6 +164,7 @@ int main(void)
   MX_UART5_Init();
   MX_USART3_UART_Init();
   MX_IWDG_Init();
+  MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -196,6 +203,9 @@ int main(void)
   HAL_reset_source(&rst_src);
   event_boot(rst_src, 0);
 
+  /*Initialize the COMMS statistics mechanism */
+  comms_rf_stats_init(&comms_stats);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -219,7 +229,7 @@ int main(void)
     }
 
     /*--------------TX------------*/
-    if(dbg_msg == 0)
+    if(dbg_msg == 1)
     {
       /* Send a dummy message towards earth */
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
@@ -264,9 +274,8 @@ int main(void)
     large_data_IDLE();
 #endif
 
-    /* Update the temperature readings */
-    /* NOTE: ADT7420 does not work on the FM COMMS */
-    /* update_adt7420(); */
+    /*Update the statistics of the COMMS */
+    comms_rf_stats_update(&comms_stats);
 
   /* USER CODE END WHILE */
 
@@ -314,6 +323,61 @@ void SystemClock_Config(void)
 
   /* SysTick_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+}
+
+/* ADC1 init function */
+void MX_ADC1_Init(void)
+{
+
+  ADC_ChannelConfTypeDef sConfig;
+
+    /**Configure the global features of the ADC (Clock, Resolution, Data Alignment and number of conversion) 
+    */
+  hadc1.Instance = ADC1;
+  hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
+  hadc1.Init.ScanConvMode = ENABLE;
+  hadc1.Init.ContinuousConvMode = ENABLE;
+  hadc1.Init.DiscontinuousConvMode = DISABLE;
+  hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
+  hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+  hadc1.Init.NbrOfConversion = 6;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
+  hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
+  HAL_ADC_Init(&hadc1);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Rank = 1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Rank = 2;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Rank = 3;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Rank = 4;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Rank = 5;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Rank = 6;
+  HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+
 }
 
 /* I2C1 init function */
@@ -432,6 +496,9 @@ void MX_DMA_Init(void)
   /* DMA1_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMA2_Stream3_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);

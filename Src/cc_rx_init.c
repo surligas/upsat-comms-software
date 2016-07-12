@@ -95,51 +95,10 @@ static const registerSetting_t RX_preferredSettings[]=
 
 static const registerSetting_t rx_temp_sensor_setup[] =
 {
-    {IOCFG3,            0xB0}, /* This GPIO Pin DOES NOT WORK ON OUR BOARD!!!!! */
-    {IOCFG2,            0x06}, /* PKT_SYNC_RXTX, on rising-falling edge*/
-    {IOCFG0,            0x00}, /* RXFIFO_THR, on rising edge */
-    {SYNC_CFG1,         0xA9},
-    {MODCFG_DEV_E,      0x0B},
     {DCFILT_CFG,        0x40}, //Tempsens settings, bit 6 high
-    {PREAMBLE_CFG1,     0x2C},
-    {PREAMBLE_CFG0,     0x8A},
-    {IQIC,              0x00},
-    {CHAN_BW,           0x81},
+    {CHAN_BW,           0x88},
     {FREQ_IF_CFG,       0x00},
     {MDMCFG1,           0x47}, //Tempsens settings, single ADC, I channel
-    {SYMBOL_RATE2,      0x8F},
-    {SYMBOL_RATE1,      0x75},
-    {SYMBOL_RATE0,      0x10},
-    {AGC_REF,           0x27},
-    {AGC_CS_THR,        0xEE},
-    {AGC_CFG1,          0x11},
-    {AGC_CFG0,          0x94},
-    {FIFO_CFG,          0x00},
-    {FS_CFG,            0x12},
-    {PKT_CFG2,          0x00},
-    {PKT_CFG0,          0x20},
-    {PKT_LEN,           0xFF},
-    {TOC_CFG,           0x03},
-    {FREQ2,             0x56},
-    {FREQ1,             0xCC},
-    {FREQ0,             0xCC},
-    {IF_ADC1,           0xEE},
-    {IF_ADC0,           0x10},
-    {FS_DIG1,           0x04},
-    {FS_DIG0,           0x55},
-    {FS_CAL1,           0x40},
-    {FS_CAL0,           0x0E},
-    {FS_DIVTWO,         0x03},
-    {FS_DSM0,           0x33},
-    {FS_DVC0,           0x17},
-    {FS_PFD,            0x00},
-    {FS_PRE,            0x6E},
-    {FS_REG_DIV_CML,    0x1C},
-    {FS_SPARE,          0xAC},
-    {FS_VCO0,           0xB5},
-    {IFAMP,             0x09},
-    {XOSC5,             0x0E},
-    {XOSC1,             0x03},
     {ATEST,             0x2A}, //Tempsens settings
     {ATEST_MODE,        0x07}, //Tempsens settings
     {GBIAS1,            0x07}, //Tempsens settings

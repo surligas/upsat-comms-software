@@ -4,9 +4,12 @@
 #include "status.h"
 #include "cc_rx_init.h"
 #include <math.h>
+#include <string.h>
 
 extern I2C_HandleTypeDef hi2c1;
 static uint8_t tmp_buf[256];
+/* Append plus  one word for the EOC (End-Of-Conversion) sample*/
+static uint32_t adc_vals[STM32_ADC_SAMPLES_NUM + 1];
 
 struct _temp_sensor
 {
@@ -186,5 +189,49 @@ cc1120_get_temp(int8_t *temperature, uint32_t timeout_ms)
   cc_rx_cmd(SRES);
   rx_register_config();
   rx_manual_calibration();
+  return COMMS_STATUS_OK;
+}
+
+/**
+ * Retrieve the temperature from the internal STM32 sensor
+ * @param h pointer to the ADC subsystem
+ * @param temperature memory to store the temperature reading
+ * @return COMMS_STATUS_OK on success or COMMS_STATUS_NO_DATA in case of
+ * invalid ADC pointer or COMMS_STATUS_DMA_ERROR in case of a DMA error
+ */
+int32_t
+stm32_get_temp(ADC_HandleTypeDef *h, float *temperature)
+{
+  size_t i;
+  HAL_StatusTypeDef ret;
+  float mean_temp = 0.0;
+  float b;
+  const float adc_resolution = VDD_VALUE / ((float) (1 << STM32_ADC_BIT_NUM));
+
+  if(h == NULL){
+    return COMMS_STATUS_NO_DATA;
+  }
+
+  /* Create the linear equation */
+  b = STM32_TS_REF_mV - STM32_TS_SLOPE * STM32_TS_REF_C;
+
+  /* Get a batch of ADC measurements */
+  memset(adc_vals, 0, (STM32_ADC_SAMPLES_NUM+1) * sizeof(uint32_t));
+  ret = HAL_ADC_Start_DMA(h, adc_vals, STM32_ADC_SAMPLES_NUM);
+  if(ret != HAL_OK){
+    return COMMS_STATUS_DMA_ERROR;
+  }
+
+  HAL_Delay(50);
+  HAL_ADC_Stop_DMA(h);
+
+  /* Calculate the mean */
+  for(i = 0; i < STM32_ADC_SAMPLES_NUM; i++){
+    mean_temp += adc_vals[i];
+  }
+  mean_temp /= (float) STM32_ADC_SAMPLES_NUM;
+
+  mean_temp = ((mean_temp * adc_resolution) - b) / STM32_TS_SLOPE;
+  *temperature = mean_temp;
   return COMMS_STATUS_OK;
 }
