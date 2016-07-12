@@ -57,7 +57,7 @@ typedef struct {
  */
 typedef enum {
   CW_OK = 0,   //!< CW_OK all ok
-  CW_ERROR = -1//!< CW_ERROR an error occured
+  CW_ERROR = -61//!< CW_ERROR an error occured
 } cw_status_t;
 
 /**

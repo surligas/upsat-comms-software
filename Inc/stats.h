@@ -33,12 +33,14 @@ typedef struct {
   size_t uptime_m;
   size_t uptime_s;
   uint32_t last_tick;
+  float temperature;
+  int32_t last_error_code;
 } comms_rf_stat_t;
 
 void
 comms_rf_stats_init(comms_rf_stat_t *h);
 
 void
-comms_rf_stats_update_uptime(comms_rf_stat_t *h);
+comms_rf_stats_update(comms_rf_stat_t *h);
 
 #endif /* INC_STATS_H_ */

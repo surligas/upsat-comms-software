@@ -20,6 +20,20 @@
 #include "stats.h"
 #include "stm32f4xx_hal.h"
 #include <string.h>
+#include "sensors.h"
+#include "status.h"
+
+extern ADC_HandleTypeDef hadc1;
+
+static inline void
+update_temperature(comms_rf_stat_t *h)
+{
+  int32_t ret;
+  ret = stm32_get_temp(&hadc1, &(h->temperature));
+  if(ret != COMMS_STATUS_OK){
+    h->last_error_code = ret;
+  }
+}
 
 void
 comms_rf_stats_init(comms_rf_stat_t *h)
@@ -32,8 +46,9 @@ comms_rf_stats_init(comms_rf_stat_t *h)
   h->last_tick = HAL_GetTick();
 }
 
-void
-comms_rf_stats_update_uptime(comms_rf_stat_t *h)
+
+static inline void
+update_uptime(comms_rf_stat_t *h)
 {
   uint32_t now = HAL_GetTick();
   uint32_t diff = now - h->last_tick;
@@ -44,4 +59,11 @@ comms_rf_stats_update_uptime(comms_rf_stat_t *h)
   h->uptime_h += h->uptime_m / 60;
   h->uptime_m %= 60;
   h->last_tick = now;
+}
+
+void
+comms_rf_stats_update(comms_rf_stat_t *h)
+{
+  update_uptime(h);
+  update_temperature(h);
 }

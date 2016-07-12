@@ -2,6 +2,7 @@
 #define SENSORS_H_
 
 #include <stdint.h>
+#include "stm32f4xx_hal.h"
 
 /* ADT7420 address, IC2*/
 #define ADT7420_ADDRESS		0x48
@@ -27,6 +28,21 @@
 #define ADT7420_OP_MODE_1_SPS	0x40
 #define ADT7420_OP_MODE_CONT_CONV 0x00
 
+
+/* STM32 internal temperature sensor settings */
+
+#define STM32_TS_SLOPE		2.5
+
+/**
+ * The analog voltage supply in mV where the calibration was performed
+ */
+#define STM32_VDDA_CAL		3300
+
+#define STM32_ADC_SAMPLES_NUM	6
+#define STM32_ADC_BIT_NUM	12
+#define STM32_TS_REF_mV		760.0
+#define STM32_TS_REF_C		25.0
+
 void
 init_adt7420 ();
 
@@ -44,5 +60,8 @@ get_timestamp_adt7420 ();
 
 int32_t
 cc1120_get_temp(int8_t *temperature, uint32_t timeout_ms);
+
+int32_t
+stm32_get_temp(ADC_HandleTypeDef *h, float *temperature);
 
 #endif
