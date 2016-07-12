@@ -24,6 +24,8 @@
 #include "tx_manager.h"
 #include "config.h"
 
+#define FRAME_OK	1
+
 int32_t
 recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 
@@ -33,6 +35,9 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms);
 int32_t
 send_payload_cw(const uint8_t *in, size_t len);
 
+int32_t
+send_cw_beacon();
+
 uint8_t
 is_tx_enabled();
 
@@ -40,7 +45,7 @@ void
 comms_init();
 
 int32_t
-comms_routine();
+comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw);
 
 
 #endif /* INC_COMMS_MANAGER_H_ */

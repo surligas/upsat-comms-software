@@ -85,4 +85,10 @@ cw_get_uptime_mins_char(comms_rf_stat_t *h);
 char
 cw_get_temp_char(comms_rf_stat_t *h);
 
+char
+cw_get_cont_errors_char(comms_rf_stat_t *h);
+
+char
+cw_get_last_error_char(comms_rf_stat_t *h);
+
 #endif /* INC_CW_H_ */

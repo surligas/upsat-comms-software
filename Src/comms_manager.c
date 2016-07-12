@@ -38,9 +38,19 @@
 
 static uint8_t interm_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN + 2];
 static uint8_t spi_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN];
-static uint8_t rx_buf[AX25_MAX_FRAME_LEN];
+static uint8_t recv_buffer[AX25_MAX_FRAME_LEN];
+static uint8_t send_buffer[AX25_MAX_FRAME_LEN];
+
+volatile extern uint8_t rx_sync_flag;
 
 extern UART_HandleTypeDef huart5;
+extern IWDG_HandleTypeDef hiwdg;
+extern struct _comms_data comms_data;
+static comms_rf_stat_t comms_stats;
+/**
+ * Used to delay the update of the internal statistics and save some cycles
+ */
+static uint32_t delay_cnt;
 
 /**
  * Disables the TX RF
@@ -242,22 +252,86 @@ send_payload_cw(const uint8_t *in, size_t len)
   return ret;
 }
 
+/**
+ * Sends a CW beacons based on the internal COMMS statistics tracking mechanism
+ * @return a negative number in case of error
+ */
+int32_t
+send_cw_beacon()
+{
+  size_t i = 0;
+  memset(send_buffer, 0, AX25_MAX_FRAME_LEN);
+  send_buffer[i++] = 'U';
+  send_buffer[i++] = 'P';
+  send_buffer[i++] = 'S';
+  send_buffer[i++] = 'A';
+  send_buffer[i++] = 'T';
+  send_buffer[i++] = cw_get_temp_char(&comms_stats);
+  send_buffer[i++] = cw_get_uptime_hours_char(&comms_stats);
+  send_buffer[i++] = cw_get_uptime_mins_char(&comms_stats);
+  send_buffer[i++] = cw_get_cont_errors_char(&comms_stats);
+  send_buffer[i++] = cw_get_last_error_char(&comms_stats);
+  return send_payload_cw(send_buffer, i);
+}
+
 
 int32_t
-comms_routine()
+comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
 {
   int32_t ret;
-  uint32_t wod_tick;
+  uint32_t now;
 
-  wod_tick = HAL_GetTick();
-  while(1) {
-    if(HAL_GetTick() - wod_tick > COMMS_WOD_PERIOD_MS){
-      /* Get the WOD and send it! */
+  /* A frame is received */
+  if(rx_sync_flag){
+    rx_sync_flag = 0;
+    ret = recv_payload(recv_buffer, AX25_MAX_FRAME_LEN,
+		       COMMS_DEFAULT_TIMEOUT_MS);
+    if(ret > 0) {
+      ret = rx_ecss(recv_buffer, ret);
+      if(ret == SATR_OK){
+	comms_rf_stats_frame_received(&comms_stats, FRAME_OK, 0);
+	LOG_UART_DBG(&huart5, "All ok %d", ret);
+      }
+      else{
+	comms_rf_stats_frame_received(&comms_stats, !FRAME_OK, ret);
+      }
     }
-
-    ret = recv_payload(rx_buf, AX25_MAX_FRAME_LEN, COMMS_DEFAULT_TIMEOUT_MS);
-
+    else{
+      comms_rf_stats_frame_received(&comms_stats, !FRAME_OK, ret);
+    }
   }
+  else if(send_wod){
+    send_wod = 0;
+  }
+  else if(send_cw){
+    send_cw = 0;
+  }
+  else{
+    import_pkt (OBC_APP_ID, &comms_data.obc_uart);
+    export_pkt (OBC_APP_ID, &comms_data.obc_uart);
+  }
+
+  large_data_IDLE();
+
+
+  /*
+   * Update the statistics of the COMMS and reset the watchdog
+   * if there are strong reasons to do so.
+   */
+  now = HAL_GetTick();
+  if(now - delay_cnt > COMMS_STATS_PERIOD_MS) {
+    delay_cnt = now;
+
+    comms_rf_stats_update(&comms_stats);
+    if(comms_stats.rx_failed_cnt < 10 && comms_stats.tx_failed_cnt < 5) {
+      HAL_IWDG_Refresh(&hiwdg);
+    }
+  }
+
+  /* Check the RX FIFO status and act accordingly */
+  cc_rx_check_fifo_status();
+
+  return ret;
 }
 
 void
@@ -300,7 +374,14 @@ comms_init ()
 
   large_data_init();
 
-  /* Initialize temperature sensor */
-  /* NOTE: In FM COMMS board this sensor does NOT work... */
-  /* init_adt7420 (); */
+  /*Initialize the COMMS statistics mechanism */
+  comms_rf_stats_init(&comms_stats);
+
+  /* Initialize the CC1120 in RX mode */
+  cc_rx_cmd(SRX);
+
+  delay_cnt = HAL_GetTick();
+
+  /*Start the watchdog */
+  HAL_IWDG_Start(&hiwdg);
 }

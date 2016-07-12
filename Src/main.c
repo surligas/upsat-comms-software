@@ -70,7 +70,6 @@ DMA_HandleTypeDef hdma_uart5_tx;
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 uint8_t aTxBuffer[500];
-uint8_t aRxBuffer[500] = {0};
 uint8_t spi_buffer[500] = {0};
 
 uint8_t tx_buf[2 * AX25_MAX_FRAME_LEN];
@@ -93,7 +92,7 @@ volatile uint8_t rx_thr_flag = 0;
 uint8_t dbg_msg = 0;
 uint8_t uart_temp[200];
 
-comms_rf_stat_t comms_stats;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -115,27 +114,6 @@ static void MX_ADC1_Init(void);
 
 /* USER CODE BEGIN 0 */
 
-static inline void
-debug_ecss()
-{
-  for (size_t i = 0; i < 50; i++) {
-    payload[0] = 8;
-    payload[1] = 1;
-    payload[2] = 192;
-    payload[4] = 0;
-    payload[5] = 0;
-    payload[6] = 5;
-    payload[7] = 16;
-    payload[8] = 17;
-    payload[9] = 2;
-    payload[10] = 7;
-    payload[11] = 0;
-    payload[12] = 200;
-    send_payload (payload, 13, COMMS_DEFAULT_TIMEOUT_MS);
-    HAL_Delay(1);
-  }
-  HAL_Delay(1000);
-}
 /* USER CODE END 0 */
 
 int main(void)
@@ -203,9 +181,6 @@ int main(void)
   HAL_reset_source(&rst_src);
   event_boot(rst_src, 0);
 
-  /*Initialize the COMMS statistics mechanism */
-  comms_rf_stats_init(&comms_stats);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -213,69 +188,8 @@ int main(void)
 
   cw_tick = HAL_GetTick();
   while (1) {
-    HAL_IWDG_Refresh(&hiwdg);
-    import_pkt (OBC_APP_ID, &comms_data.obc_uart);
-    export_pkt (OBC_APP_ID, &comms_data.obc_uart);
 
-    /* Check if a CW beacon should be sent */
-    if(HAL_GetTick() - cw_tick > __CW_INTERVAL_MS ) {
-
-      /* Wait a little to finish the previous transmission if any */
-      HAL_Delay(1000);
-      ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
-		      "UPSAT %d", loop);
-      send_payload_cw(payload, ret);
-      cw_tick = HAL_GetTick();
-    }
-
-    /*--------------TX------------*/
-    if(dbg_msg == 1)
-    {
-      /* Send a dummy message towards earth */
-      ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
-          "HELLO WORLD FROM UPSAT 0 "
-		      "HELLO WORLD FROM UPSAT 1"
-		      "HELLO WORLD FROM UPSAT 2"
-		      "HELLO WORLD FROM UPSAT 3"
-		      "loop %d", loop);
-
-      ret =  send_payload(payload, (size_t)ret, COMMS_DEFAULT_TIMEOUT_MS);
-      HAL_Delay (50);
-      if (ret > 0) {
-        HAL_Delay (50);
-        LOG_UART_DBG(&huart5, "Frame transmitted Loop %u Ret %d", loop, ret);
-      }
-      else {
-        LOG_UART_DBG(&huart5, "Error %d at frame transmission", ret);
-      }
-      loop++;
-      HAL_Delay (500);
-    }
-
-    /*--------------RX------------*/
-#if 1
-    memset(aRxBuffer, 0, 255);
-    ret = recv_payload(aRxBuffer, 255, COMMS_DEFAULT_TIMEOUT_MS * 2 );
-    if(ret < 0){
-      LOG_UART_DBG(&huart5, "RX Failed %d\n", ret);
-    }
-    else{
-      LOG_UART_DBG(&huart5, "RX OK %d\n", ret);
-      HAL_Delay (50);
-      LOG_UART_DBG(&huart5, "RX Msg OK: %s", aRxBuffer);
-      ret = rx_ecss(aRxBuffer, ret);
-      if(ret == SATR_OK){
-	LOG_UART_DBG(&huart5, "ECSS Valid");
-      }
-      else{
-	LOG_UART_DBG(&huart5, "Invalid ECSS. Error %d", ret);
-      }
-    }
-    large_data_IDLE();
-#endif
-
-    /*Update the statistics of the COMMS */
-    comms_rf_stats_update(&comms_stats);
+    comms_routine_dispatcher(0, 0);
 
   /* USER CODE END WHILE */
 

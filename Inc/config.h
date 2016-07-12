@@ -90,6 +90,11 @@ static const uint32_t __CW_INTERVAL_MS = 40000;
 #define COMMS_DEFAULT_TIMEOUT_MS 4000
 
 /**
+ * The default COMMS statistics polling period
+ */
+#define COMMS_STATS_PERIOD_MS 1000
+
+/**
  * The WOD (World Orbit Data) period in milliseconds
  */
 #define COMMS_WOD_PERIOD_MS  30000

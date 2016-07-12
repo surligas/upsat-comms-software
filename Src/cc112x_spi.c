@@ -491,6 +491,9 @@ cc_rx_reset_irqs()
 /**
  * Get a frame from the air. This method blocks for \p timeout_ms milliseconds
  * until a valid frame is received.
+ * When this called is triggered the SYNC word interupt MUST be already
+ * triggered.
+ *
  * @param out the output buffer
  * @param len the size of the output buffer
  * @param timeout_ms the timeout period in milliseconds
@@ -510,27 +513,10 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
   /*Reset all the RX-related flags */
   cc_rx_reset_irqs();
 
-  /* Start the reception by issuing the start-RX command */
-  cc_rx_cmd (SFRX);
-  cc_rx_cmd (SRX);
-
-  /* Now wait for the SYNC word to be received */
   start_tick = HAL_GetTick ();
-  while (HAL_GetTick () - start_tick < timeout_ms) {
-    if (rx_sync_flag) {
-      timeout = 0;
-      break;
-    }
-  }
-
-  /* Timeout occurred, just return */
-  if (timeout) {
-    cc_rx_cmd (SFRX);
-    cc_rx_cmd (SIDLE);
-    return COMMS_STATUS_TIMEOUT;
-  }
 
   /*
+   * The SYNC word has been already received.
    * Time to extract the frame length,. This is indicated by the first byte
    * after the SYNC word
    */
@@ -557,8 +543,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     }
 
     if (timeout) {
+      /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
+      cc_rx_reset_irqs();
+      cc_rx_cmd (SRX);
       return COMMS_STATUS_TIMEOUT;
     }
 
@@ -568,8 +557,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     rx_thr_flag = 0;
 
     if (ret) {
+      /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
+      cc_rx_reset_irqs();
+      cc_rx_cmd (SRX);
       return COMMS_STATUS_NO_DATA;
     }
     received += CC1120_BYTES_IN_RX_FIF0;
@@ -584,8 +576,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     }
   }
   if (timeout) {
+    /* Flush and restart! */
     cc_rx_cmd (SFRX);
     cc_rx_cmd (SIDLE);
+    cc_rx_reset_irqs();
+    cc_rx_cmd (SRX);
     return COMMS_STATUS_RXFIFO_ERROR;
   }
 
@@ -593,8 +588,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
   if (frame_len - received > 1) {
     ret = cc_rx_spi_read_fifo (out + received, frame_len - received);
     if (ret) {
+      /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
+      cc_rx_reset_irqs();
+      cc_rx_cmd (SRX);
       return COMMS_STATUS_NO_DATA;
     }
   }
@@ -602,8 +600,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     /* One byte FIFO access */
     cc_rx_rd_reg (SINGLE_RXFIFO, out + received);
   }
+  /* Flush and restart! */
   cc_rx_cmd (SFRX);
   cc_rx_cmd (SIDLE);
+  cc_rx_reset_irqs();
+  cc_rx_cmd (SRX);
   return frame_len;
 }
 
@@ -654,5 +655,23 @@ cc_rx_cmd (uint8_t CMDStrobe)
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
   delay_us(4);
   return aRxBuffer[0];
+}
+
+/**
+ * Checks if the RX FIFO of the CC1120 encountered any error. If yes,
+ * the FIFO is flushed and the RX CC1120 is set again in normal RX mode.
+ */
+void
+cc_rx_check_fifo_status()
+{
+  uint8_t reg;
+  cc_rx_rd_reg(MODEM_STATUS1, &reg);
+  /* Underflow or overflow are asserted */
+  if(reg & 0xc){
+    cc_rx_cmd (SFRX);
+    cc_rx_cmd (SIDLE);
+    cc_rx_reset_irqs();
+    cc_rx_cmd (SRX);
+  }
 }
 

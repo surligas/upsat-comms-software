@@ -57,4 +57,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms);
 uint8_t
 cc_rx_cmd (uint8_t CMDStrobe);
 
+void
+cc_rx_check_fifo_status();
+
 #endif

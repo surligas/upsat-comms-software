@@ -67,3 +67,31 @@ comms_rf_stats_update(comms_rf_stat_t *h)
   update_uptime(h);
   update_temperature(h);
 }
+
+void
+comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
+			      int32_t error)
+{
+  if(succesfull){
+    h->rx_failed_cnt = 0;
+  }
+  else {
+    h->rx_failed_cnt++;
+    h->last_error_code = error;
+  }
+  h->rx_frames_cnt++;
+}
+
+void
+comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
+				 int32_t error)
+{
+  if(succesfull){
+    h->tx_failed_cnt = 0;
+  }
+  else {
+    h->tx_failed_cnt++;
+    h->last_error_code = error;
+  }
+  h->tx_frames_cnt++;
+}
