@@ -219,7 +219,7 @@ int main(void)
     }
 
     /*--------------TX------------*/
-    if(dbg_msg == 1)
+    if(dbg_msg == 0)
     {
       /* Send a dummy message towards earth */
       ret = snprintf ((char *) payload, AX25_MAX_FRAME_LEN,
@@ -265,7 +265,8 @@ int main(void)
 #endif
 
     /* Update the temperature readings */
-    update_adt7420();
+    /* NOTE: ADT7420 does not work on the FM COMMS */
+    /* update_adt7420(); */
 
   /* USER CODE END WHILE */
 

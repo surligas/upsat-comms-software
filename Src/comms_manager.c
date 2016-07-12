@@ -301,5 +301,6 @@ comms_init ()
   large_data_init();
 
   /* Initialize temperature sensor */
-  init_adt7420 ();
+  /* NOTE: In FM COMMS board this sensor does NOT work... */
+  /* init_adt7420 (); */
 }

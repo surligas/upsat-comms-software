@@ -187,6 +187,7 @@ static inline void
 set_tx_cw_regs()
 {
   tx_cw_registerConfig();
+  tx_manualCalibration ();
 }
 
 /**
@@ -196,6 +197,7 @@ static inline void
 set_tx_fsk_regs()
 {
   tx_registerConfig();
+  tx_manualCalibration ();
 }
 
 /**
@@ -238,7 +240,6 @@ cc_tx_cw(const cw_pulse_t *in, size_t len)
   /* Restore the FSK configuration */
   cc_tx_cmd (SRES);
   set_tx_fsk_regs();
-  tx_manualCalibration ();
   cc_tx_cmd (SIDLE);
   cc_tx_cmd (SFTX);
   return CW_OK;

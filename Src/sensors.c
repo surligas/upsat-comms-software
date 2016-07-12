@@ -120,6 +120,7 @@ cc1120_get_temp(int8_t *temperature, uint32_t timeout_ms)
 
   /* Perform the proper configuration of the CC1120 for temperature reading */
   rx_temp_sensor_register_config();
+  rx_manual_calibration();
 
   /* Set the CC1120 in RX mode */
   cc_rx_cmd(SRX);
@@ -184,5 +185,6 @@ cc1120_get_temp(int8_t *temperature, uint32_t timeout_ms)
   /* Reset the Radio at the initial setup again */
   cc_rx_cmd(SRES);
   rx_register_config();
+  rx_manual_calibration();
   return COMMS_STATUS_OK;
 }
