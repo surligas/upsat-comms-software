@@ -76,14 +76,14 @@ static const uint32_t __CW_INTERVAL_MS = 40000;
 /**
  * Enables/disables the UART debug
  */
-#define COMMS_UART_DBG_EN 1
+#define COMMS_UART_DBG_EN 0
 #define COMMS_UART_BUF_LEN 512
 
 /**
  * If set to 1, the UART target is the OBC. If set to 0, the UART target
  * is the FTDI debugging dongle
  */
-#define COMMS_UART_DEST_OBC 0
+#define COMMS_UART_DEST_OBC 1
 /**
  * The default time out period is 4 seconds
  */
