@@ -278,7 +278,7 @@ send_cw_beacon()
 int32_t
 comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
 {
-  int32_t ret;
+  int32_t ret = COMMS_STATUS_OK;
   uint32_t now;
 
   /* A frame is received */
@@ -302,9 +302,15 @@ comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
   }
   else if(send_wod){
     send_wod = 0;
+    ret = sprintf(send_buffer, "HELLO WORLD THIS IS UPSAT! THE FIRST GREEK"
+		  " OPENSOURCE CUBSAT!");
+    ret = send_payload(send_buffer, ret, COMMS_DEFAULT_TIMEOUT_MS);
+    LOG_UART_DBG(&huart5, "FSK %d", ret);
   }
   else if(send_cw){
     send_cw = 0;
+    ret = send_cw_beacon();
+    LOG_UART_DBG(&huart5, "CW %d", ret);
   }
   else{
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);

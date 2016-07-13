@@ -123,6 +123,8 @@ int main(void)
   int32_t ret = 0;
   uint8_t rst_src;
   uint32_t cw_tick;
+  uint32_t fsk_tick;
+  uint32_t now;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -187,9 +189,21 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   cw_tick = HAL_GetTick();
+  fsk_tick = cw_tick;
   while (1) {
+    now = HAL_GetTick();
+    if(now - cw_tick > 300000){
+      cw_tick = now;
+      comms_routine_dispatcher(0, 1);
+    }
+    else if(now - fsk_tick > 2000 ){
+      fsk_tick = now;
+      comms_routine_dispatcher(1, 0);
+    }
+    else{
+      comms_routine_dispatcher(0, 0);
+    }
 
-    comms_routine_dispatcher(0, 0);
 
   /* USER CODE END WHILE */
 
