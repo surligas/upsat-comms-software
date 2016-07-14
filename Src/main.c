@@ -69,28 +69,16 @@ DMA_HandleTypeDef hdma_uart5_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t aTxBuffer[500];
-uint8_t spi_buffer[500] = {0};
-
-uint8_t tx_buf[2 * AX25_MAX_FRAME_LEN];
-
-uint8_t payload[AX25_MAX_FRAME_LEN] = "HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT HELLO WORLD FROM UPSAT";
-
 uint8_t res;
-uint8_t resRX;
-uint8_t res2[6];
-uint8_t res2RX[6];
-uint8_t res_fifo[6];
-uint8_t res_fifoRX[6];
-uint8_t loop = 0;
+uint16_t size = 0;
+
 volatile uint8_t tx_thr_flag = 0;
 volatile uint8_t tx_fin_flag = 0;
 volatile uint8_t rx_sync_flag = 0;
 volatile uint8_t rx_finished_flag = 0;
 volatile uint8_t rx_thr_flag = 0;
 
-uint8_t dbg_msg = 0;
-uint8_t uart_temp[200];
+uint8_t uart_temp[512];
 
 
 /* USER CODE END PV */
@@ -123,8 +111,8 @@ int main(void)
   int32_t ret = 0;
   uint8_t rst_src;
   uint32_t cw_tick;
-  uint32_t fsk_tick;
   uint32_t now;
+  uint8_t send_cw = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -149,17 +137,16 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /* TX Pins RESETN_TX, PA_CTRL_PIN, CSN1 */
-  HAL_GPIO_WritePin (GPIOA, RESETN_TX_Pin, GPIO_PIN_SET); //PA10
-  HAL_GPIO_WritePin (PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_SET); //POWER AMP CONTROL
-  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET); //csn1
+  HAL_GPIO_WritePin (GPIOA, RESETN_TX_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (PA_CNTRL_GPIO_Port, PA_CNTRL_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 
   /* RX Pins RESETN_RX, CSN2 */
-  HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET); //PIN36 2RESETN
-  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET); //PIN36 2CSN
+  HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
+  HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
   /*Must use this in order the compiler occupies flash sector 3*/
   flash_INIT();
-  
   uint32_t add_read = flash_read_trasmit();
 
   HAL_Delay (4000);
@@ -167,16 +154,13 @@ int main(void)
   comms_init();
   LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
-  HAL_Delay (100);
-
-  pkt_pool_INIT ();
-
-  uint16_t size = 0;
-
   event_crt_pkt_api (uart_temp, "COMMS STARTED", 666, 666, "", &size, SATR_OK);
+  /*
+   * FIXME: should this debug API ID?
+   */
   HAL_uart_tx (DBG_APP_ID, (uint8_t *) uart_temp, size);
 
-  /*Uart inits*/
+  /* UART initializations */
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
 
   /* Sent to OBC the reason of re-booting */
@@ -189,21 +173,14 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   cw_tick = HAL_GetTick();
-  fsk_tick = cw_tick;
   while (1) {
     now = HAL_GetTick();
-    if(now - cw_tick > 300000){
+    if(now - cw_tick > __CW_INTERVAL_MS){
       cw_tick = now;
-      comms_routine_dispatcher(0, 1);
+      /* Should be reset from comms_routine_dispatcher() when served */
+      send_cw = 1;
     }
-    else if(now - fsk_tick > 2000 ){
-      fsk_tick = now;
-      comms_routine_dispatcher(1, 0);
-    }
-    else{
-      comms_routine_dispatcher(0, 0);
-    }
-
+    comms_routine_dispatcher(&send_cw);
 
   /* USER CODE END WHILE */
 

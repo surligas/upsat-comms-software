@@ -35,6 +35,9 @@ typedef struct {
   uint32_t last_tick;
   float temperature;
   int32_t last_error_code;
+  uint32_t battery_mV;
+  uint32_t battery_mA;
+  uint32_t invalid_dest_frames_cnt;
 } comms_rf_stat_t;
 
 void
@@ -50,4 +53,7 @@ comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
 void
 comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
 				 int32_t error);
+
+void
+comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h);
 #endif /* INC_STATS_H_ */

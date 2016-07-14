@@ -72,6 +72,10 @@ void
 comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
 			      int32_t error)
 {
+  if(h == NULL){
+    return;
+  }
+
   if(succesfull){
     h->rx_failed_cnt = 0;
   }
@@ -86,6 +90,10 @@ void
 comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
 				 int32_t error)
 {
+  if(h == NULL){
+    return;
+  }
+
   if(succesfull){
     h->tx_failed_cnt = 0;
   }
@@ -94,4 +102,19 @@ comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
     h->last_error_code = error;
   }
   h->tx_frames_cnt++;
+}
+
+/**
+ * The function increases the counter of the frames received,
+ * containing however invalid destination information (callsign or SSID)
+ * @param h pointer to a valid handle
+ */
+void
+comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h)
+{
+  if(h == NULL){
+    return;
+  }
+
+  h->invalid_dest_frames_cnt++;
 }

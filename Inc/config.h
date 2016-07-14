@@ -71,19 +71,19 @@ static const uint32_t __SCRAMBLER_ORDER = 16;
 /**
  * The interval of the CW beacon
  */
-static const uint32_t __CW_INTERVAL_MS = 40000;
+static const uint32_t __CW_INTERVAL_MS = 300000;
 
 /**
  * Enables/disables the UART debug
  */
-#define COMMS_UART_DBG_EN 0
+#define COMMS_UART_DBG_EN 1
 #define COMMS_UART_BUF_LEN 512
 
 /**
  * If set to 1, the UART target is the OBC. If set to 0, the UART target
  * is the FTDI debugging dongle
  */
-#define COMMS_UART_DEST_OBC 1
+#define COMMS_UART_DEST_OBC 0
 /**
  * The default time out period is 4 seconds
  */

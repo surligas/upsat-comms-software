@@ -45,7 +45,7 @@ void
 comms_init();
 
 int32_t
-comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw);
+comms_routine_dispatcher(uint8_t *send_cw);
 
 
 #endif /* INC_COMMS_MANAGER_H_ */

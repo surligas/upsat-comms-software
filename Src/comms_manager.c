@@ -46,7 +46,7 @@ volatile extern uint8_t rx_sync_flag;
 extern UART_HandleTypeDef huart5;
 extern IWDG_HandleTypeDef hiwdg;
 extern struct _comms_data comms_data;
-static comms_rf_stat_t comms_stats;
+comms_rf_stat_t comms_stats;
 /**
  * Used to delay the update of the internal statistics and save some cycles
  */
@@ -274,9 +274,26 @@ send_cw_beacon()
   return send_payload_cw(send_buffer, i);
 }
 
-
+/**
+ * This dispatcher checks which communication related task should execute.
+ * The task may be:
+ * 	1. Serve an RX operation because the corresponding IRQ was triggered
+ * 	2. Transmit the CW beacon
+ * 	3. Flush and restart the RX operation if the CC1120 reached an invalid
+ * 	   state.
+ *
+ * 	NOTE: Normal FSK TX operations are triggered automatically by the
+ * 	ECSS services subsystem and more precisely from the route() function.
+ *
+ * @param send_cw pointer to a boolean indicating if the COMMS should transmit
+ * a CW beacon. It will be reset from this function only if the beacon
+ * has been succesfully transmitted or the TX subsystem encountered an error
+ * during transmission. This is happening because we give a priority to
+ * the RX event.
+ * @return COMMS_STATUS_OK on success or an appropriate error code.
+ */
 int32_t
-comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
+comms_routine_dispatcher(uint8_t *send_cw)
 {
   int32_t ret = COMMS_STATUS_OK;
   uint32_t now;
@@ -300,15 +317,8 @@ comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
       comms_rf_stats_frame_received(&comms_stats, !FRAME_OK, ret);
     }
   }
-  else if(send_wod){
-    send_wod = 0;
-    ret = sprintf(send_buffer, "HELLO WORLD THIS IS UPSAT! THE FIRST GREEK"
-		  " OPENSOURCE CUBSAT!");
-    ret = send_payload(send_buffer, ret, COMMS_DEFAULT_TIMEOUT_MS);
-    LOG_UART_DBG(&huart5, "FSK %d", ret);
-  }
-  else if(send_cw){
-    send_cw = 0;
+  else if(*send_cw){
+    *send_cw = 0;
     ret = send_cw_beacon();
     LOG_UART_DBG(&huart5, "CW %d", ret);
   }
@@ -340,6 +350,9 @@ comms_routine_dispatcher(uint8_t send_wod, uint8_t send_cw)
   return ret;
 }
 
+/**
+ * Make all the necessary initializations for the COMMS subsystem
+ */
 void
 comms_init ()
 {
@@ -390,4 +403,9 @@ comms_init ()
 
   /*Start the watchdog */
   HAL_IWDG_Start(&hiwdg);
+
+  pkt_pool_INIT ();
+
+  /* Wait a little and we are ready! */
+  HAL_Delay(1000);
 }

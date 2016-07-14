@@ -735,6 +735,18 @@ cw_init ()
   cw_lut['W'].s_num = i;
 
   i = 0;
+  cw_lut['X'].is_valid = 1;
+  cw_lut['X'].s[i++] = CW_DASH;
+  cw_lut['X'].s[i++] = CW_SYMBOL_DELIM;
+  cw_lut['X'].s[i++] = CW_DOT;
+  cw_lut['X'].s[i++] = CW_SYMBOL_DELIM;
+  cw_lut['X'].s[i++] = CW_DOT;
+  cw_lut['X'].s[i++] = CW_SYMBOL_DELIM;
+  cw_lut['X'].s[i++] = CW_DASH;
+  cw_lut['X'].s[i++] = CW_CHAR_DELIM;
+  cw_lut['X'].s_num = i;
+
+  i = 0;
   cw_lut['Y'].is_valid = 1;
   cw_lut['Y'].s[i++] = CW_DASH;
   cw_lut['Y'].s[i++] = CW_SYMBOL_DELIM;
