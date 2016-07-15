@@ -189,4 +189,16 @@ max(uint8_t x, uint8_t y)
   return x > y ? x : y;
 }
 
+static inline float
+minf(float x, float y)
+{
+  return x < y ? x : y;
+}
+
+static inline float
+maxf(float x, float y)
+{
+  return x > y ? x : y;
+}
+
 #endif /* INCLUDE_SATNOGS_UTILS_H_ */

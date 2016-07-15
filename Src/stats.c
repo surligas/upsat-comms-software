@@ -118,3 +118,13 @@ comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h)
 
   h->invalid_dest_frames_cnt++;
 }
+
+float
+comms_rf_stats_get_temperature(comms_rf_stat_t *h)
+{
+  if(h == NULL){
+    return nanf("NaN");
+  }
+
+  return h->temperature;
+}

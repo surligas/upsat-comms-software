@@ -79,6 +79,7 @@ volatile uint8_t rx_finished_flag = 0;
 volatile uint8_t rx_thr_flag = 0;
 
 uint8_t uart_temp[512];
+uint8_t debug_temp[256];
 
 
 /* USER CODE END PV */
@@ -101,7 +102,23 @@ static void MX_ADC1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+static inline void
+debug_ecss ()
+{
+  debug_temp[0] = 8;
+  debug_temp[1] = 1;
+  debug_temp[2] = 192;
+  debug_temp[4] = 0;
+  debug_temp[5] = 0;
+  debug_temp[6] = 5;
+  debug_temp[7] = 16;
+  debug_temp[8] = 17;
+  debug_temp[9] = 2;
+  debug_temp[10] = 7;
+  debug_temp[11] = 0;
+  debug_temp[12] = 200;
+  send_payload (debug_temp, 13, COMMS_DEFAULT_TIMEOUT_MS);
+}
 /* USER CODE END 0 */
 
 int main(void)
@@ -111,6 +128,7 @@ int main(void)
   int32_t ret = 0;
   uint8_t rst_src;
   uint32_t cw_tick;
+  uint32_t dbg_tick;
   uint32_t now;
   uint8_t send_cw = 0;
   /* USER CODE END 1 */
@@ -173,12 +191,17 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   cw_tick = HAL_GetTick();
+  dbg_tick = cw_tick;
   while (1) {
     now = HAL_GetTick();
     if(now - cw_tick > __CW_INTERVAL_MS){
       cw_tick = now;
       /* Should be reset from comms_routine_dispatcher() when served */
       send_cw = 1;
+    }
+    if(now - dbg_tick > 10000){
+      dbg_tick = now;
+      debug_ecss();
     }
     comms_routine_dispatcher(&send_cw);
 

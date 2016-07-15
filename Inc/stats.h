@@ -56,4 +56,7 @@ comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
 
 void
 comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h);
+
+float
+comms_rf_stats_get_temperature(comms_rf_stat_t *h);
 #endif /* INC_STATS_H_ */

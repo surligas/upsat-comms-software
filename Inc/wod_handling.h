@@ -22,6 +22,8 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "utils.h"
+#include <math.h>
 
 /**
  * The number of bytes in every WOD data set WITHOUT the mode bit
@@ -35,5 +37,8 @@
 
 int32_t
 prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len);
+
+uint8_t
+wod_convert_temperature(float val);
 
 #endif /* INC_WOD_HANDLING_H_ */

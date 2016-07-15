@@ -134,3 +134,17 @@ prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
   }
   return bytes_cnt;
 }
+
+/**
+ * Converts a floating point temperature into a WOD compatible 1 byte value
+ * @param val the temperature
+ * @return 1 byte with the WOD compatible temperature
+ */
+uint8_t
+wod_convert_temperature(float val)
+{
+  /* clamp between min and max value */
+  val = maxf(val, -15.0);
+  val = minf(val, 48.75);
+  return (uint8_t)((val + 15.0) / 0.25);
+}
