@@ -172,12 +172,6 @@ int main(void)
   comms_init();
   LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
-  event_crt_pkt_api (uart_temp, "COMMS STARTED", 666, 666, "", &size, SATR_OK);
-  /*
-   * FIXME: should this debug API ID?
-   */
-  HAL_uart_tx (DBG_APP_ID, (uint8_t *) uart_temp, size);
-
   /* UART initializations */
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
 
