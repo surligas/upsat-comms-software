@@ -193,10 +193,6 @@ int main(void)
       /* Should be reset from comms_routine_dispatcher() when served */
       send_cw = 1;
     }
-    if(now - dbg_tick > 10000){
-      dbg_tick = now;
-      debug_ecss();
-    }
     comms_routine_dispatcher(&send_cw);
 
   /* USER CODE END WHILE */
