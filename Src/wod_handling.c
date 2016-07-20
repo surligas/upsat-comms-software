@@ -18,7 +18,10 @@
  */
 #include "wod_handling.h"
 #include "status.h"
+#include "comms_manager.h"
 #include <string.h>
+
+static comms_wod_t last_wod;
 
 static inline uint8_t
 bat_voltage_valid(uint8_t val)
@@ -73,8 +76,16 @@ bat_temp_valid(uint8_t val)
   return comms_temp_valid(val);
 }
 
-int32_t
-prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
+/**
+ * This functions takes a WOD frame from the OBC and transforms it properly
+ * in order to transmit it at the Ground Station.
+ * @param wod the COMMS internal WOD structure
+ * @param obc_wod the buffer with the WOD frame from the OBC
+ * @param len the size of the \p obc_wod buffer
+ * @return COMMS_STATUS_OK on success or -1 on error.
+ */
+static int32_t
+prepare_wod(comms_wod_t *wod, const uint8_t *obc_wod, size_t len)
 {
   size_t i = 0;
   size_t j = 0;
@@ -87,11 +98,11 @@ prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
 
   if (wod == NULL || obc_wod == NULL
       || datasets_num == 0|| datasets_num > WOD_MAX_DATASETS) {
-    return COMMS_STATUS_NO_DATA;
+    return -1;
   }
 
   /* The first 4 bytes are the timestamp */
-  memcpy(wod, obc_wod, sizeof(uint32_t));
+  memcpy(wod->wod, obc_wod, sizeof(uint32_t));
 
   idx += sizeof(uint32_t);
   bytes_cnt += sizeof(uint32_t);
@@ -111,7 +122,7 @@ prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
     bits_cnt++;
     if(bits_cnt == 8 ){
       bits_cnt = 0;
-      wod[bytes_cnt++] = out_b;
+      wod->wod[bytes_cnt++] = out_b;
     }
 
     for(j = 0; j < WOD_DATASET_SIZE * 8; j++){
@@ -120,7 +131,7 @@ prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
       bits_cnt++;
       if (bits_cnt == 8) {
 	bits_cnt = 0;
-	wod[bytes_cnt++] = out_b;
+	wod->wod[bytes_cnt++] = out_b;
       }
     }
 
@@ -130,9 +141,10 @@ prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len)
   /* Zero padding may be necessary */
   if(bits_cnt){
     out_b <<= (8 - bits_cnt);
-    wod[bytes_cnt++] = out_b;
+    wod->wod[bytes_cnt++] = out_b;
   }
-  return bytes_cnt;
+  wod->len = bytes_cnt;
+  return COMMS_STATUS_OK;
 }
 
 /**
@@ -147,4 +159,40 @@ wod_convert_temperature(float val)
   val = maxf(val, -15.0);
   val = minf(val, 48.75);
   return (uint8_t)((val + 15.0) / 0.25);
+}
+
+void
+store_wod_obc(const uint8_t *obc_wod, size_t len)
+{
+  int32_t ret;
+  ret = prepare_wod(&last_wod, obc_wod, len);
+  if(ret == COMMS_STATUS_OK){
+    last_wod.valid = 1;
+    last_wod.tx_cnt = 0;
+  }
+}
+
+/**
+ * Initializes the COMMS WOD structure to the initial defaults
+ */
+void
+comms_wod_init()
+{
+  memset(&last_wod, 0, sizeof(comms_wod_t));
+}
+
+int32_t
+comms_wod_tx()
+{
+  int32_t ret = 0;
+  if(last_wod.valid && last_wod.tx_cnt < 6) {
+    ret = send_payload(last_wod.wod, last_wod.len, COMMS_DEFAULT_TIMEOUT_MS);
+    if(ret > 0){
+      last_wod.tx_cnt++;
+    }
+  }
+  else{
+    /*TODO: What should be transmitted in this case? */
+  }
+  return ret;
 }

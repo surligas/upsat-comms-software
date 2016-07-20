@@ -32,6 +32,7 @@
 #include "verification_service.h"
 #include "large_data_service.h"
 #include "sensors.h"
+#include "wod_handling.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 25
@@ -293,10 +294,14 @@ send_cw_beacon()
  * @return COMMS_STATUS_OK on success or an appropriate error code.
  */
 int32_t
-comms_routine_dispatcher(uint8_t *send_cw)
+comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
 {
   int32_t ret = COMMS_STATUS_OK;
   uint32_t now;
+
+  if(tx_jobs == NULL){
+    return COMMS_STATUS_NO_DATA;
+  }
 
   /* A frame is received */
   if(rx_sync_flag){
@@ -317,10 +322,14 @@ comms_routine_dispatcher(uint8_t *send_cw)
       comms_rf_stats_frame_received(&comms_stats, !FRAME_OK, ret);
     }
   }
-  else if(*send_cw){
-    *send_cw = 0;
+  else if(tx_jobs->tx_cw){
+    tx_jobs->tx_cw = 0;
     ret = send_cw_beacon();
     LOG_UART_DBG(&huart5, "CW %d", ret);
+  }
+  else if(tx_jobs->tx_wod){
+    tx_jobs->tx_wod = 0;
+    ret = comms_wod_tx();
   }
   else{
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
@@ -405,6 +414,8 @@ comms_init ()
   HAL_IWDG_Start(&hiwdg);
 
   pkt_pool_INIT ();
+
+  comms_wod_init();
 
   /* Wait a little and we are ready! */
   HAL_Delay(1000);

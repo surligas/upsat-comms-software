@@ -26,6 +26,14 @@
 
 #define FRAME_OK	1
 
+/**
+ * Struct containing a set of TX jobs that the dispatcher should take care
+ */
+typedef struct {
+  uint8_t tx_cw;
+  uint8_t tx_wod;
+} comms_tx_job_list_t;
+
 int32_t
 recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
 
@@ -45,7 +53,7 @@ void
 comms_init();
 
 int32_t
-comms_routine_dispatcher(uint8_t *send_cw);
+comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs);
 
 
 #endif /* INC_COMMS_MANAGER_H_ */

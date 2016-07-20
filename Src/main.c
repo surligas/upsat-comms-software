@@ -128,7 +128,8 @@ int main(void)
   int32_t ret = 0;
   uint8_t rst_src;
   uint32_t cw_tick;
-  uint32_t dbg_tick;
+  uint32_t wod_tick;
+  comms_tx_job_list_t tx_jobs;
   uint32_t now;
   uint8_t send_cw = 0;
   /* USER CODE END 1 */
@@ -185,13 +186,18 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   cw_tick = HAL_GetTick();
-  dbg_tick = cw_tick;
+  memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
   while (1) {
     now = HAL_GetTick();
     if(now - cw_tick > __CW_INTERVAL_MS){
       cw_tick = now;
       /* Should be reset from comms_routine_dispatcher() when served */
-      send_cw = 1;
+      tx_jobs.tx_cw = 1;
+    }
+
+    if(now - wod_tick > __WOD_INTERVAL_MS) {
+      wod_tick = now;
+      tx_jobs.tx_wod = 1;
     }
     comms_routine_dispatcher(&send_cw);
 

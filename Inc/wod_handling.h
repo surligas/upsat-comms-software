@@ -35,10 +35,27 @@
  */
 #define WOD_MAX_DATASETS 32
 
-int32_t
-prepare_wod(uint8_t *wod, const uint8_t *obc_wod, size_t len);
+/**
+ * WOD packet as it handled inside the COMMS
+ */
+typedef struct {
+  uint8_t wod[sizeof(uint32_t) + ((WOD_DATASET_SIZE*8+1) * WOD_MAX_DATASETS / 8)];
+  size_t len;
+  size_t tx_cnt;
+  uint8_t valid;
+} comms_wod_t;
+
 
 uint8_t
 wod_convert_temperature(float val);
+
+void
+store_wod_obc(const uint8_t *obc_wod, size_t len);
+
+void
+comms_wod_init();
+
+int32_t
+comms_wod_tx();
 
 #endif /* INC_WOD_HANDLING_H_ */

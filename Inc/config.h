@@ -70,8 +70,23 @@ static const uint32_t __SCRAMBLER_ORDER = 16;
 
 /**
  * The interval of the CW beacon
+ * Around 3 CWs per orbit pass
  */
-static const uint32_t __CW_INTERVAL_MS = 300000;
+static const uint32_t __CW_INTERVAL_MS = 140000;
+
+/**
+ * The interval of the WOD beacon.
+ */
+static const uint32_t __WOD_INTERVAL_MS = 30000;
+
+/**
+ * The OBC sends a WOD to the COMMS every 1 minute. The WOD
+ * interval is far less, so the COMMS transmits in these intervals the same
+ * WOD. However, if the threshold is reached, this means that the communication
+ * with the OBC has a problem. In this case COMMS will transmit other
+ * data to the Ground to report the problem.
+ */
+static const uint32_t __MAX_WOD_RETRASMISSIONS = 6;
 
 /**
  * Enables/disables the UART debug
