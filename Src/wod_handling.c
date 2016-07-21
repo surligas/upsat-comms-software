@@ -192,7 +192,13 @@ comms_wod_tx()
     }
   }
   else{
-    /*TODO: What should be transmitted in this case? */
+    /*
+     * Send a WOD with all zeros to the Ground. This will indicate the
+     * communication problem with the OBC
+     */
+    memset(last_wod.wod, 0, sizeof(last_wod.wod));
+    ret = send_payload(last_wod.wod, sizeof(last_wod.wod),
+		       COMMS_DEFAULT_TIMEOUT_MS);
   }
   return ret;
 }

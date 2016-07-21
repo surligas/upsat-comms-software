@@ -186,6 +186,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   cw_tick = HAL_GetTick();
+  wod_tick = cw_tick;
   memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
   while (1) {
     now = HAL_GetTick();
@@ -199,7 +200,7 @@ int main(void)
       wod_tick = now;
       tx_jobs.tx_wod = 1;
     }
-    comms_routine_dispatcher(&send_cw);
+    comms_routine_dispatcher(&tx_jobs);
 
   /* USER CODE END WHILE */
 
