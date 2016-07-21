@@ -109,9 +109,5 @@ static const uint32_t __MAX_WOD_RETRASMISSIONS = 6;
  */
 #define COMMS_STATS_PERIOD_MS 1000
 
-/**
- * The WOD (World Orbit Data) period in milliseconds
- */
-#define COMMS_WOD_PERIOD_MS  30000
 
 #endif /* CONFIG_H_ */

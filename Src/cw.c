@@ -272,7 +272,7 @@ cw_get_temp_char(comms_rf_stat_t *h)
     return '0';
   }
 
-  float temp = h->temperature;
+  float temp = h->comms_temperature;
   if (temp < -10.0) {
     ret =  'A';
   }
@@ -418,6 +418,196 @@ cw_get_cont_errors_char(comms_rf_stat_t *h)
   }
   else{
     ret = 'Z';
+  }
+  return ret;
+}
+
+char
+cw_get_bat_voltage_char(comms_rf_stat_t *h)
+{
+  char ret = '0';
+  uint32_t voltage;
+
+  if (h == NULL) {
+    return '0';
+  }
+
+  voltage = h->battery_mV;
+  if(voltage < 8000 ) {
+    ret = '0';
+  }
+  else if (voltage < 8200) {
+    ret =  'A';
+  }
+  else if (voltage < 8400) {
+    ret =  'B';
+  }
+  else if (voltage < 8600) {
+    ret =  'C';
+  }
+  else if (voltage < 8800) {
+    ret =  'D';
+  }
+  else if (voltage < 9000) {
+    ret =  'E';
+  }
+  else if (voltage < 9200) {
+    ret =  'F';
+  }
+  else if (voltage < 9400) {
+    ret =  'G';
+  }
+  else if (voltage < 9600) {
+    ret =  'H';
+  }
+  else if (voltage < 9800) {
+    ret =  'I';
+  }
+  else if (voltage < 10000) {
+    ret =  'J';
+  }
+  else if (voltage < 10200) {
+    ret =  'K';
+  }
+  else if (voltage < 10400) {
+    ret =  'L';
+  }
+  else if (voltage < 10600) {
+    ret =  'M';
+  }
+  else if (voltage < 10800) {
+    ret =  'N';
+  }
+  else if (voltage < 11000) {
+    ret =  'O';
+  }
+  else if (voltage < 11200) {
+    ret =  'P';
+  }
+  else if (voltage < 11400) {
+    ret =  'Q';
+  }
+  else if (voltage < 11600) {
+    ret =  'R';
+  }
+  else if (voltage < 11800) {
+    ret =  'S';
+  }
+  else if (voltage < 12000) {
+    ret =  'T';
+  }
+  else if (voltage < 12200) {
+    ret =  'U';
+  }
+  else if (voltage < 12400) {
+    ret =  'V';
+  }
+  else if (voltage < 12600) {
+    ret =  'W';
+  }
+  else if (voltage < 12800) {
+    ret =  'X';
+  }
+  else if (voltage < 13000) {
+    ret =  'Y';
+  }
+  else {
+    ret =  'Z';
+  }
+  return ret;
+}
+
+char
+cw_get_bat_current_char(comms_rf_stat_t *h)
+{
+  char ret = '0';
+  int32_t current;
+
+  if (h == NULL) {
+    return '0';
+  }
+
+  current = h->battery_mA;
+  if(current < -1000 ) {
+    ret = '0';
+  }
+  else if (current < -920) {
+    ret =  'A';
+  }
+  else if (current < -840) {
+    ret =  'B';
+  }
+  else if (current < -760) {
+    ret =  'C';
+  }
+  else if (current < -680) {
+    ret =  'D';
+  }
+  else if (current < -600) {
+    ret =  'E';
+  }
+  else if (current < -520) {
+    ret =  'F';
+  }
+  else if (current < -440) {
+    ret =  'G';
+  }
+  else if (current < -360) {
+    ret =  'H';
+  }
+  else if (current < -280) {
+    ret =  'I';
+  }
+  else if (current < -200) {
+    ret =  'J';
+  }
+  else if (current < -120) {
+    ret =  'K';
+  }
+  else if (current < -40) {
+    ret =  'L';
+  }
+  else if (current < 40) {
+    ret =  'M';
+  }
+  else if (current < 120) {
+    ret =  'N';
+  }
+  else if (current < 200) {
+    ret =  'O';
+  }
+  else if (current < 280) {
+    ret =  'P';
+  }
+  else if (current < 360) {
+    ret =  'Q';
+  }
+  else if (current < 440) {
+    ret =  'R';
+  }
+  else if (current < 520) {
+    ret =  'S';
+  }
+  else if (current < 600) {
+    ret =  'T';
+  }
+  else if (current < 680) {
+    ret =  'U';
+  }
+  else if (current < 760) {
+    ret =  'V';
+  }
+  else if (current < 840) {
+    ret =  'W';
+  }
+  else if (current < 920) {
+    ret =  'X';
+  }
+  else if (current < 1000) {
+    ret =  'Y';
+  }
+  else {
+    ret =  'Z';
   }
   return ret;
 }

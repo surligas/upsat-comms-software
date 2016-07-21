@@ -216,16 +216,20 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
   int32_t ret;
 
   if(len > AX25_MAX_FRAME_LEN) {
+    comms_rf_stats_frame_transmitted(&comms_stats, 0,
+				     COMMS_STATUS_BUFFER_OVERFLOW);
     return COMMS_STATUS_BUFFER_OVERFLOW;
   }
 
   /* Check if the TX is enabled */
   if(!is_tx_enabled()){
+    /* If the TX is disabled do not count it as error in the RF stats */
     return COMMS_STATUS_RF_OFF;
   }
 
   memset(spi_buf, 0, sizeof(spi_buf));
   ret = tx_data(in, len, spi_buf, timeout_ms);
+  comms_rf_stats_frame_transmitted(&comms_stats, ret > 1, ret);
   return ret;
 }
 
@@ -267,6 +271,8 @@ send_cw_beacon()
   send_buffer[i++] = 'S';
   send_buffer[i++] = 'A';
   send_buffer[i++] = 'T';
+  send_buffer[i++] = cw_get_bat_voltage_char(&comms_stats);
+  send_buffer[i++] = cw_get_bat_current_char(&comms_stats);
   send_buffer[i++] = cw_get_temp_char(&comms_stats);
   send_buffer[i++] = cw_get_uptime_hours_char(&comms_stats);
   send_buffer[i++] = cw_get_uptime_mins_char(&comms_stats);

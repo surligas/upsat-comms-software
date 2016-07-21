@@ -102,23 +102,7 @@ static void MX_ADC1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-static inline void
-debug_ecss ()
-{
-  debug_temp[0] = 8;
-  debug_temp[1] = 1;
-  debug_temp[2] = 192;
-  debug_temp[4] = 0;
-  debug_temp[5] = 0;
-  debug_temp[6] = 5;
-  debug_temp[7] = 16;
-  debug_temp[8] = 17;
-  debug_temp[9] = 2;
-  debug_temp[10] = 7;
-  debug_temp[11] = 0;
-  debug_temp[12] = 200;
-  send_payload (debug_temp, 13, COMMS_DEFAULT_TIMEOUT_MS);
-}
+
 /* USER CODE END 0 */
 
 int main(void)

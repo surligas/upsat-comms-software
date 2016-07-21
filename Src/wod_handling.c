@@ -19,11 +19,13 @@
 #include "wod_handling.h"
 #include "status.h"
 #include "comms_manager.h"
+#include "stats.h"
 #include <string.h>
 
 static comms_wod_t last_wod;
+extern comms_rf_stat_t comms_stats;
 
-static inline uint8_t
+uint8_t
 bat_voltage_valid(uint8_t val)
 {
   if(val > 129 && val < 197){
@@ -32,7 +34,7 @@ bat_voltage_valid(uint8_t val)
   return 0;
 }
 
-static inline uint8_t
+uint8_t
 bat_current_valid(uint8_t val)
 {
   if(val > 64){
@@ -41,7 +43,7 @@ bat_current_valid(uint8_t val)
   return 0;
 }
 
-static inline uint8_t
+uint8_t
 bus_3300mV_current_valid(uint8_t val)
 {
   if(val < 115){
@@ -50,12 +52,12 @@ bus_3300mV_current_valid(uint8_t val)
   return 0;
 }
 
-static inline uint8_t
+uint8_t
 bus_5000mV_current_valid(uint8_t val){
   return bus_3300mV_current_valid(val);
 }
 
-static inline uint8_t
+uint8_t
 comms_temp_valid(uint8_t val)
 {
   if(val > 79){
@@ -64,13 +66,13 @@ comms_temp_valid(uint8_t val)
   return 0;
 }
 
-static inline uint8_t
+uint8_t
 eps_temp_valid(uint8_t val)
 {
   return comms_temp_valid(val);
 }
 
-static inline uint8_t
+uint8_t
 bat_temp_valid(uint8_t val)
 {
   return comms_temp_valid(val);
@@ -78,7 +80,10 @@ bat_temp_valid(uint8_t val)
 
 /**
  * This functions takes a WOD frame from the OBC and transforms it properly
- * in order to transmit it at the Ground Station.
+ * in order to transmit it at the Ground Station. At the same time it updates
+ * the statistics of the COMMS by tracking the WOD values of the most
+ * recent observations.
+ *
  * @param wod the COMMS internal WOD structure
  * @param obc_wod the buffer with the WOD frame from the OBC
  * @param len the size of the \p obc_wod buffer
@@ -100,6 +105,9 @@ prepare_wod(comms_wod_t *wod, const uint8_t *obc_wod, size_t len)
       || datasets_num == 0|| datasets_num > WOD_MAX_DATASETS) {
     return -1;
   }
+
+  /* Update the COMMS stats based on the most recent WOD data */
+  comms_rf_stats_wod_received(&comms_stats, obc_wod);
 
   /* The first 4 bytes are the timestamp */
   memcpy(wod->wod, obc_wod, sizeof(uint32_t));

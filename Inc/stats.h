@@ -33,11 +33,14 @@ typedef struct {
   size_t uptime_m;
   size_t uptime_s;
   uint32_t last_tick;
-  float temperature;
+  float comms_temperature;
+  float eps_temperature;
+  float bat_temperature;
   int32_t last_error_code;
   uint32_t battery_mV;
-  uint32_t battery_mA;
+  int32_t battery_mA;
   uint32_t invalid_dest_frames_cnt;
+  uint32_t last_utc;
 } comms_rf_stat_t;
 
 void
@@ -59,4 +62,7 @@ comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h);
 
 float
 comms_rf_stats_get_temperature(comms_rf_stat_t *h);
+
+void
+comms_rf_stats_wod_received(comms_rf_stat_t *h, const uint8_t *obc_wod);
 #endif /* INC_STATS_H_ */

@@ -55,7 +55,21 @@ store_wod_obc(const uint8_t *obc_wod, size_t len);
 void
 comms_wod_init();
 
+uint8_t
+bat_voltage_valid(uint8_t val);
 int32_t
 comms_wod_tx();
+uint8_t
+bat_current_valid(uint8_t val);
+uint8_t
+bus_3300mV_current_valid(uint8_t val);
+uint8_t
+bus_5000mV_current_valid(uint8_t val);
+uint8_t
+comms_temp_valid(uint8_t val);
+uint8_t
+eps_temp_valid(uint8_t val);
+uint8_t
+bat_temp_valid(uint8_t val);
 
 #endif /* INC_WOD_HANDLING_H_ */

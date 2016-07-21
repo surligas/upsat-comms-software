@@ -29,7 +29,7 @@ static inline void
 update_temperature(comms_rf_stat_t *h)
 {
   int32_t ret;
-  ret = stm32_get_temp(&hadc1, &(h->temperature));
+  ret = stm32_get_temp(&hadc1, &(h->comms_temperature));
   if(ret != COMMS_STATUS_OK){
     h->last_error_code = ret;
   }
@@ -126,5 +126,99 @@ comms_rf_stats_get_temperature(comms_rf_stat_t *h)
     return nanf("NaN");
   }
 
-  return h->temperature;
+  return h->comms_temperature;
+}
+
+static uint32_t
+get_wod_utc_time(const uint8_t *obc_wod)
+{
+  uint32_t ret;
+  if(obc_wod == NULL){
+    return ret;
+  }
+  memcpy(&ret, obc_wod, sizeof(uint32_t));
+  return ret;
+}
+
+static uint32_t
+get_wod_bat_voltage(const uint8_t *obc_wod)
+{
+  uint32_t ret = 0;
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t)];
+  if(bat_voltage_valid(val)) {
+    ret = 3000 + val * 50;
+  }
+  return ret;
+}
+
+static int32_t
+get_wod_bat_current(const uint8_t *obc_wod)
+{
+  int32_t ret = -2000;
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t) + 1];
+  if(bat_current_valid(val)) {
+    ret = -1000 + val * 8;
+  }
+  return ret;
+}
+
+static float
+get_wod_eps_temp(const uint8_t *obc_wod)
+{
+  float ret = nanf("NaN");
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t) + 5];
+  if(eps_temp_valid(val)) {
+    ret = -15.0 + val * 0.25;
+  }
+  return ret;
+}
+
+static float
+get_wod_bat_temp(const uint8_t *obc_wod)
+{
+  float ret = nanf("NaN");
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t) + 6];
+  if(eps_temp_valid(val)) {
+    ret = -15.0 + val * 0.25;
+  }
+  return ret;
+}
+
+/**
+ * Updates the statistics that COMMS tracks based on the WOD that received
+ * from the OBC
+ * @param h h pointer to a valid handle
+ * @param obc_wod the WOD at it was received from the OBC
+ */
+void
+comms_rf_stats_wod_received(comms_rf_stat_t *h, const uint8_t *obc_wod)
+{
+  if(h == NULL){
+    return;
+  }
+  h->last_utc = get_wod_utc_time(obc_wod);
+  h->bat_temperature = get_wod_bat_temp(obc_wod);
+  h->eps_temperature = get_wod_eps_temp(obc_wod);
+  h->battery_mA = get_wod_bat_current(obc_wod);
+  h->battery_mV = get_wod_bat_voltage(obc_wod);
 }
