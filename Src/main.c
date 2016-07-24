@@ -48,6 +48,7 @@
 #include "comms_manager.h"
 #include "sensors.h"
 #include "stats.h"
+#include "sysview.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -154,6 +155,11 @@ int main(void)
 
   HAL_Delay (4000);
 
+  /* Initialize the systemview */
+  SEGGER_SYSVIEW_Conf();
+  sysview_init();
+
+  /*Make all the proper initializations for the COMMS */
   comms_init();
   LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
 
