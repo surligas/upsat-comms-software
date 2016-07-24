@@ -22,17 +22,15 @@
 #include <string.h>
 #include "sensors.h"
 #include "status.h"
+#include "wod_handling.h"
+#include <math.h>
 
 extern ADC_HandleTypeDef hadc1;
 
 static inline void
 update_temperature(comms_rf_stat_t *h)
 {
-  int32_t ret;
-  ret = stm32_get_temp(&hadc1, &(h->comms_temperature));
-  if(ret != COMMS_STATUS_OK){
-    h->last_error_code = ret;
-  }
+  stm32_get_temp(&hadc1, &(h->comms_temperature));
 }
 
 void
@@ -81,7 +79,7 @@ comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
   }
   else {
     h->rx_failed_cnt++;
-    h->last_error_code = error;
+    h->last_rx_error_code = error;
   }
   h->rx_frames_cnt++;
 }
@@ -99,7 +97,7 @@ comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
   }
   else {
     h->tx_failed_cnt++;
-    h->last_error_code = error;
+    h->last_tx_error_code = error;
   }
   h->tx_frames_cnt++;
 }
@@ -115,8 +113,20 @@ comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h)
   if(h == NULL){
     return;
   }
-
   h->invalid_dest_frames_cnt++;
+}
+
+/**
+ * The function increases the counter of the frames received with wrong CRC.
+ * @param h pointer to a valid handle
+ */
+void
+comms_rf_stats_invalid_crc_frame(comms_rf_stat_t *h)
+{
+  if(h == NULL){
+    return;
+  }
+  h->rx_crc_failed_cnt++;
 }
 
 float
@@ -125,14 +135,13 @@ comms_rf_stats_get_temperature(comms_rf_stat_t *h)
   if(h == NULL){
     return nanf("NaN");
   }
-
   return h->comms_temperature;
 }
 
 static uint32_t
 get_wod_utc_time(const uint8_t *obc_wod)
 {
-  uint32_t ret;
+  uint32_t ret = 0;
   if(obc_wod == NULL){
     return ret;
   }
@@ -168,6 +177,38 @@ get_wod_bat_current(const uint8_t *obc_wod)
   val = obc_wod[sizeof(uint32_t) + 1];
   if(bat_current_valid(val)) {
     ret = -1000 + val * 8;
+  }
+  return ret;
+}
+
+static uint32_t
+get_wod_bus_3300_current(const uint8_t *obc_wod)
+{
+  int32_t ret = 0xFFFFFFFF;
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t) + 2];
+  if(bus_3300mV_current_valid(val)) {
+    ret = val * 25;
+  }
+  return ret;
+}
+
+static uint32_t
+get_wod_bus_5000_current(const uint8_t *obc_wod)
+{
+  int32_t ret = 0xFFFFFFFF;
+  uint8_t val;
+  if(obc_wod == NULL){
+    return ret;
+  }
+
+  val = obc_wod[sizeof(uint32_t) + 3];
+  if(bus_5000mV_current_valid(val)) {
+    ret = val * 25;
   }
   return ret;
 }
@@ -221,4 +262,6 @@ comms_rf_stats_wod_received(comms_rf_stat_t *h, const uint8_t *obc_wod)
   h->eps_temperature = get_wod_eps_temp(obc_wod);
   h->battery_mA = get_wod_bat_current(obc_wod);
   h->battery_mV = get_wod_bat_voltage(obc_wod);
+  h->bus_3300_mA = get_wod_bus_3300_current(obc_wod);
+  h->bus_5000_mA = get_wod_bus_5000_current(obc_wod);
 }

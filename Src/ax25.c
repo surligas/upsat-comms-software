@@ -27,8 +27,6 @@
 #undef __FILE_ID__
 #define __FILE_ID__ 669
 
-extern UART_HandleTypeDef huart5;
-
 static const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
 uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN] = {0};
 uint8_t tmp_bit_buf[(AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN) * 8] = {0};
@@ -269,7 +267,7 @@ ax25_decoder_enter_frame_end(ax25_handle_t *h)
  * @param ax25_frame buffer containing the received bits
  * @param len the length of the \p ax25_frame buffer
  * @return AX25_DEC_NOT_READY if yet no AX.25 frame received or
- * AX25_DEC_OK if an AX.25 frame succesfully retrived.
+ * AX25_DEC_OK if an AX.25 frame successfully retrieved.
  */
 ax25_decode_status_t
 ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
@@ -314,6 +312,9 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	      if(recv_fcs == fcs){
 		*out_len = h->decoded_num - sizeof(uint16_t);
 		return AX25_DEC_OK;
+	      }
+	      else{
+		return AX25_DEC_CRC_FAIL;
 	      }
 	    }
 	    ax25_decoder_enter_frame_end(h);

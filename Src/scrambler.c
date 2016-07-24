@@ -20,7 +20,6 @@
 #include "scrambler.h"
 #include "log.h"
 #include "stm32f4xx_hal.h"
-extern UART_HandleTypeDef huart5;
 
 int32_t
 scrambler_init (scrambler_handle_t *h, uint32_t pol, uint32_t seed,

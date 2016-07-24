@@ -621,7 +621,14 @@ cw_get_last_error_char(comms_rf_stat_t *h)
   if (h == NULL) {
     return '0';
   }
-  err_code = h->last_error_code;
+
+  /* Give a priority at the TX error code. */
+  if(h->last_tx_error_code){
+    err_code = h->last_tx_error_code;
+  }
+  else{
+    err_code = h->last_rx_error_code;
+  }
 
   if(err_code == -9){
     ret = 'A';

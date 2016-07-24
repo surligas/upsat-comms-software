@@ -25,20 +25,24 @@
 #include <stdint.h>
 
 typedef struct {
-  size_t rx_failed_cnt;
-  size_t tx_failed_cnt;
-  size_t tx_frames_cnt;
-  size_t rx_frames_cnt;
-  size_t uptime_h;
-  size_t uptime_m;
-  size_t uptime_s;
+  uint32_t rx_failed_cnt;
+  uint32_t rx_crc_failed_cnt;
+  uint32_t tx_failed_cnt;
+  uint32_t tx_frames_cnt;
+  uint32_t rx_frames_cnt;
+  uint32_t uptime_h;
+  uint32_t uptime_m;
+  uint32_t uptime_s;
   uint32_t last_tick;
   float comms_temperature;
   float eps_temperature;
   float bat_temperature;
-  int32_t last_error_code;
+  int32_t last_tx_error_code;
+  int32_t last_rx_error_code;
   uint32_t battery_mV;
   int32_t battery_mA;
+  uint32_t bus_3300_mA;
+  uint32_t bus_5000_mA;
   uint32_t invalid_dest_frames_cnt;
   uint32_t last_utc;
 } comms_rf_stat_t;
@@ -59,6 +63,9 @@ comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
 
 void
 comms_rf_stats_invalid_dest_frame(comms_rf_stat_t *h);
+
+void
+comms_rf_stats_invalid_crc_frame(comms_rf_stat_t *h);
 
 float
 comms_rf_stats_get_temperature(comms_rf_stat_t *h);

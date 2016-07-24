@@ -110,13 +110,11 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  int32_t ret = 0;
   uint8_t rst_src;
   uint32_t cw_tick;
   uint32_t wod_tick;
   comms_tx_job_list_t tx_jobs;
   uint32_t now;
-  uint8_t send_cw = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -191,6 +189,9 @@ int main(void)
       tx_jobs.tx_wod = 1;
     }
     comms_routine_dispatcher(&tx_jobs);
+    uart_killer (OBC_APP_ID, &comms_data.obc_uart, now);
+    pkt_pool_IDLE(now);
+    queue_IDLE(OBC_APP_ID);
 
   /* USER CODE END WHILE */
 

@@ -32,6 +32,7 @@
 typedef struct {
   uint8_t tx_cw;
   uint8_t tx_wod;
+  uint8_t tx_ext_wod;
 } comms_tx_job_list_t;
 
 int32_t

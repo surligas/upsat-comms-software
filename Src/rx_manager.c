@@ -28,8 +28,6 @@ volatile extern uint8_t rx_sync_flag;
 volatile extern uint8_t rx_finished_flag;
 volatile extern uint8_t rx_thr_flag;
 
-extern UART_HandleTypeDef huart5;
-
 uint8_t tmp_buf[AX25_MAX_FRAME_LEN + 2];
 ax25_handle_t h_ax25dec;
 

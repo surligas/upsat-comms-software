@@ -178,12 +178,16 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
   memset(spi_buf, 0, sizeof(spi_buf));
   ret = rx_data(interm_buf, len, timeout_ms);
   if(ret < 1){
+    if(ret == AX25_DEC_CRC_FAIL){
+      comms_rf_stats_invalid_crc_frame(&comms_stats);
+    }
     return ret;
   }
 
   /* Now check if the frame was indented for us */
   check = ax25_check_dest_callsign(interm_buf, (size_t)ret, __UPSAT_CALLSIGN);
   if(!check){
+    comms_rf_stats_invalid_dest_frame(&comms_stats);
     return COMMS_STATUS_INVALID_FRAME;
   }
 
