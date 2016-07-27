@@ -33,6 +33,7 @@
 #include "large_data_service.h"
 #include "sensors.h"
 #include "wod_handling.h"
+#include "sha256.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 25
@@ -53,6 +54,7 @@ comms_rf_stat_t comms_stats;
  */
 static uint32_t delay_cnt;
 
+static SHA256_CTX sha_ctx;
 /**
  * Disables the TX RF
  */
@@ -105,12 +107,14 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
 {
   uint32_t i;
   uint8_t flag = 0;
-  uint32_t *id_ptr;
+  uint32_t *sw_key_ptr;
   uint32_t cmd_hdr_len = strlen(__COMMS_RF_SWITCH_CMD);
-  uint32_t cmd_id_len_bytes = sizeof(__COMMS_RF_SWITCH_ON_CMD);
+  uint8_t sha_res[32];
 
   /* Due to length restrictions, this is definitely not an RF switch command */
-  if(len < cmd_hdr_len || len < cmd_hdr_len + cmd_id_len_bytes){
+  if (len < cmd_hdr_len
+      || len
+	  < (cmd_hdr_len + __COMMS_RF_SWITCH_KEY_LEN + sizeof(__COMMS_RF_ON_KEY))) {
     return 0;
   }
 
@@ -124,16 +128,20 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
     return 0;
   }
 
-  /*
-   * Perform a second search now, based on the commands IDs.
-   * Due to the space harmful environment do not be so strict
-   * and accept the command if one of the ID integers are correct.
-   */
-  id_ptr = (uint32_t *)(in + cmd_hdr_len);
-  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
-    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_ON_CMD[i]);
+  sha256_init(&sha_ctx);
+  sha256_update(&sha_ctx, in + cmd_hdr_len, __COMMS_RF_SWITCH_KEY_LEN);
+  sha256_final(&sha_ctx, sha_res);
+
+  /* Check if the received key matches the stored hash */
+  for(i = 0; i < 32; i++){
+    if(sha_res[i] != __COMMS_RF_SWITCH_HASH[i]) {
+      return 0;
+    }
   }
 
+  /* Key was ok. now check the actual command */
+  sw_key_ptr = (uint32_t *)(in + cmd_hdr_len + __COMMS_RF_SWITCH_KEY_LEN);
+  flag = *sw_key_ptr == __COMMS_RF_ON_KEY;
   if(flag){
     rf_tx_enable();
     return 1;
@@ -144,9 +152,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
    * shutting it down
    */
   flag = 0;
-  for(i = 0; i < cmd_id_len_bytes / sizeof(uint32_t); i++) {
-    flag |= (id_ptr[i] == __COMMS_RF_SWITCH_OFF_CMD[i]);
-  }
+  flag = *sw_key_ptr == __COMMS_RF_OFF_KEY;
 
   if(flag) {
     rf_tx_shutdown();

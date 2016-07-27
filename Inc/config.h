@@ -25,14 +25,17 @@
 static const char __UPSAT_CALLSIGN[] = "ON02GR";
 static const uint8_t __UPSAT_SSID = 0;
 static const uint8_t __UPSAT_AX25_CTRL = 0x03;
-static const char __UPSAT_DEST_CALLSIGN[] = "ABCD";
+static const char __UPSAT_DEST_CALLSIGN[] = "GND";
 static const uint8_t __UPSAT_DEST_SSID = 0;
-static const char __COMMS_RF_SWITCH_CMD[] = "RF SW CMD";
-static const uint32_t __COMMS_RF_SWITCH_ON_CMD[] =
-    {0xda4942a9, 0xa7a45d61, 0x413981b, 0xa94ee2d3};
-static const uint32_t __COMMS_RF_SWITCH_OFF_CMD[] =
-  { 0x593d55df, 0x4d2f84c0, 0x24d60191, 0x9287b5fd };
 
+static const char __COMMS_RF_SWITCH_CMD[] = "RF SW CMD";
+static const uint8_t __COMMS_RF_SWITCH_HASH[] =
+	{0x09, 0x0d, 0x99, 0x0b, 0x6f, 0xae, 0x19, 0x35, 0xdc,
+	0xd4, 0x38, 0x94, 0x56, 0xd8, 0x82, 0x47, 0x56, 0xbe,
+	0x99, 0x95, 0x9f, 0xd6, 0xb4, 0x45, 0x7a,
+	0x9d, 0x0c, 0xb4, 0xd5, 0x86, 0x45, 0xe5};
+
+static const size_t __COMMS_RF_SWITCH_KEY_LEN = 32;
 /**
  * A key indicating that the TX RF of the COMMS is on.
  *

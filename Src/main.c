@@ -49,6 +49,7 @@
 #include "sensors.h"
 #include "stats.h"
 #include "sysview.h"
+#include "sha256.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -156,6 +157,7 @@ int main(void)
   /* Initialize the systemview */
   SEGGER_SYSVIEW_Conf();
   sysview_init();
+
 
   /*Make all the proper initializations for the COMMS */
   comms_init();
