@@ -27,6 +27,10 @@ static const uint8_t __UPSAT_SSID = 0;
 static const uint8_t __UPSAT_AX25_CTRL = 0x03;
 static const char __UPSAT_DEST_CALLSIGN[] = "GND";
 static const uint8_t __UPSAT_DEST_SSID = 0;
+/**
+ * The destination SSID for WOD frames as specified by QB50-SYS-1.5.13
+ */
+static const uint8_t __UPSAT_DEST_SSID_WOD = 0x0e;
 
 static const char __COMMS_RF_SWITCH_CMD[] = "RF SW CMD";
 static const uint8_t __COMMS_RF_SWITCH_HASH[] =

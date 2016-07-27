@@ -31,11 +31,12 @@ static cw_pulse_t cw_buf[AX25_MAX_FRAME_LEN * 10];
  * @param in the input buffer containing the raw data
  * @param len the length of the input buffer
  * @param dev_rx_buffer a buffer that will hold the SPI resulting bytes
+ * @param is_wod set to true if the frame is WOD
  * @param timeout_ms the timeout in milliseconds
  * @return the number of bytes sent or appropriate error code
  */
 int32_t
-tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
+tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer, uint8_t is_wod,
 	size_t timeout_ms)
 {
   int32_t ret = 0;
@@ -49,7 +50,7 @@ tx_data(const uint8_t *in, size_t len, uint8_t *dev_rx_buffer,
   }
 
   /* Prepare the AX.25 frame */
-  ret = ax25_send(tmp_buf, in, len);
+  ret = ax25_send(tmp_buf, in, len, is_wod);
   if(ret < 1){
     return COMMS_STATUS_NO_DATA;
   }

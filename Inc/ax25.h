@@ -124,7 +124,7 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
 	     const uint8_t *ax25_frame, size_t len);
 
 int32_t
-ax25_send(uint8_t *out, const uint8_t *in, size_t len);
+ax25_send(uint8_t *out, const uint8_t *in, size_t len, uint8_t is_wod);
 
 int32_t
 ax25_recv_nrzi (ax25_handle_t *h, uint8_t *out, size_t *out_len,

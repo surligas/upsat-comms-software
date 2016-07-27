@@ -376,10 +376,11 @@ ax25_decode (ax25_handle_t *h, uint8_t *out, size_t *out_len,
  * @param out the output buffer that will hold the encoded data
  * @param in the input data containing the payload
  * @param len the length of the input data
+ * @param is_wod set to true if this frame is a WOD
  * @return the length of the encoded data or -1 in case of error
  */
 int32_t
-ax25_send(uint8_t *out, const uint8_t *in, size_t len)
+ax25_send(uint8_t *out, const uint8_t *in, size_t len, uint8_t is_wod)
 {
   ax25_encode_status_t status;
   uint8_t addr_buf[AX25_MAX_ADDR_LEN] = {0};
@@ -388,10 +389,13 @@ ax25_send(uint8_t *out, const uint8_t *in, size_t len)
   size_t ret_len;
   size_t i;
   size_t pad_bits = 0;
+  uint8_t dest_ssid = is_wod ? __UPSAT_DEST_SSID_WOD :__UPSAT_DEST_SSID;
 
   /* Create the address field */
-  addr_len = ax25_create_addr_field (addr_buf, __UPSAT_DEST_CALLSIGN,
-				     __UPSAT_DEST_SSID, __UPSAT_CALLSIGN,
+  addr_len = ax25_create_addr_field (addr_buf,
+				     (const uint8_t *)__UPSAT_DEST_CALLSIGN,
+				     dest_ssid,
+				     (const uint8_t *) __UPSAT_CALLSIGN,
 				     __UPSAT_SSID);
 
   /*

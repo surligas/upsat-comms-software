@@ -217,11 +217,12 @@ recv_payload(uint8_t *out, size_t len, size_t timeout_ms)
  * Send a payload using AX.25 encoding
  * @param in the payload buffer
  * @param len the length of the payload in bytes
+ * @param is_wod set to true if the frame is a WOD
  * @param timeout_ms the timeout limit in milliseconds
  * @return number of bytes sent or appropriate error code
  */
 int32_t
-send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
+send_payload(const uint8_t *in, size_t len, uint8_t is_wod, size_t timeout_ms)
 {
   int32_t ret;
 
@@ -238,7 +239,7 @@ send_payload(const uint8_t *in, size_t len, size_t timeout_ms)
   }
 
   memset(spi_buf, 0, sizeof(spi_buf));
-  ret = tx_data(in, len, spi_buf, timeout_ms);
+  ret = tx_data(in, len, spi_buf, is_wod, timeout_ms);
   comms_rf_stats_frame_transmitted(&comms_stats, ret > 1, ret);
   return ret;
 }

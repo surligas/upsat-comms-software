@@ -194,7 +194,7 @@ comms_wod_tx()
 {
   int32_t ret = 0;
   if(last_wod.valid && last_wod.tx_cnt < 6) {
-    ret = send_payload(last_wod.wod, last_wod.len, COMMS_DEFAULT_TIMEOUT_MS);
+    ret = send_payload(last_wod.wod, last_wod.len, 1, COMMS_DEFAULT_TIMEOUT_MS);
     if(ret > 0){
       last_wod.tx_cnt++;
     }
@@ -205,7 +205,7 @@ comms_wod_tx()
      * communication problem with the OBC
      */
     memset(last_wod.wod, 0, sizeof(last_wod.wod));
-    ret = send_payload(last_wod.wod, sizeof(last_wod.wod),
+    ret = send_payload(last_wod.wod, sizeof(last_wod.wod), 1,
 		       COMMS_DEFAULT_TIMEOUT_MS);
   }
   return ret;
