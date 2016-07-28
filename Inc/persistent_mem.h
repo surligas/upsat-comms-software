@@ -23,12 +23,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define COMMS_PERSIST_MEM_BASE_ADDR 0x0
+uint32_t
+comms_persistent_mem_init();
 
 void
-comms_write_persistent_word(uint32_t word);
+comms_write_persistent_word(uint32_t word, size_t offset);
 
 uint32_t
-comms_read_persistent_word();
+comms_read_persistent_word(size_t offset);
 
 #endif /* INC_PERSISTENT_MEM_H_ */

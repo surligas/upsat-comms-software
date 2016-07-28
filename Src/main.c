@@ -50,6 +50,7 @@
 #include "stats.h"
 #include "sysview.h"
 #include "sha256.h"
+#include "persistent_mem.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -112,10 +113,11 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
   uint8_t rst_src;
-  uint32_t cw_tick;
-  uint32_t wod_tick;
+  uint32_t tick;
   comms_tx_job_list_t tx_jobs;
   uint32_t now;
+  uint32_t tx_job_cnt = 0;
+  uint32_t tx_job_desc = __COMMS_DEFAULT_HEADLESH_TX_PATTERN;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -149,8 +151,7 @@ int main(void)
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
 
   /*Must use this in order the compiler occupies flash sector 3*/
-  flash_INIT();
-  uint32_t add_read = flash_read_trasmit();
+  comms_persistent_mem_init();
 
   HAL_Delay (4000);
 
@@ -161,7 +162,7 @@ int main(void)
 
   /*Make all the proper initializations for the COMMS */
   comms_init();
-  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated %d", add_read);
+  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
 
   /* UART initializations */
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
@@ -175,22 +176,54 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
-  cw_tick = HAL_GetTick();
-  wod_tick = cw_tick;
+  tick = HAL_GetTick();
   memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
   while (1) {
     now = HAL_GetTick();
-    if(now - cw_tick > __CW_INTERVAL_MS){
-      cw_tick = now;
-      /* Should be reset from comms_routine_dispatcher() when served */
-      tx_jobs.tx_cw = 1;
+    if(now - tick > __TX_INTERVAL_MS){
+      /*
+       * Check which type of TX job should be performed. At this time any
+       * previous unfinished TX jobs are dropped.
+       */
+      memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
+      tick = now;
+
+      /* Zero ID always refer to CW beacon */
+      if(tx_job_cnt == 0) {
+	/* Should be reset from comms_routine_dispatcher() when served */
+	tx_jobs.tx_cw = 1;
+      }
+      else{
+	/*An active bit means ex_WOD whereas an inactive a WOD */
+	if((tx_job_desc >> tx_job_cnt) & 0x1){
+	  tx_jobs.tx_ext_wod = 1;
+	}
+	else{
+	  tx_jobs.tx_wod = 1;
+	}
+      }
+
+      tx_job_cnt++;
+      tx_job_cnt = tx_job_cnt % 8;
+      /*
+       * Now it's a good time to re-read the flash, in case the
+       * headless transmission scheme altered
+       */
+      tx_job_desc = comms_read_persistent_word(__COMMS_HEADLESH_TX_FLASH_OFFSET);
+
+      /*
+       * In case the ex_WOD number is greater than the WOD, shit happened.
+       * Show fall back to the default
+       */
+      if(bit_count(tx_job_desc) > 4){
+	tx_job_desc = __COMMS_DEFAULT_HEADLESH_TX_PATTERN;
+      }
+
     }
 
-    if(now - wod_tick > __WOD_INTERVAL_MS) {
-      wod_tick = now;
-      tx_jobs.tx_wod = 1;
-    }
     comms_routine_dispatcher(&tx_jobs);
+
+
     uart_killer (OBC_APP_ID, &comms_data.obc_uart, now);
     pkt_pool_IDLE(now);
     queue_IDLE(OBC_APP_ID);

@@ -61,6 +61,20 @@ static const uint32_t __COMMS_RF_ON_KEY = 0x16264e84;
 static const uint32_t __COMMS_RF_OFF_KEY = 0x669d93a3;
 
 /**
+ * The offset from the beginning of the flash block in which
+ * the RF key is stored
+ */
+static const uint32_t __COMMS_RF_KEY_FLASH_OFFSET = 0x0;
+
+/**
+ * The offset from the beginning of the flash block in which
+ * the headless transmission pattern of the
+ */
+static const uint32_t __COMMS_HEADLESH_TX_FLASH_OFFSET = 0x4;
+
+static const uint32_t __COMMS_DEFAULT_HEADLESH_TX_PATTERN = 0xa2;
+
+/**
  * The scrambler polynomial
  */
 static const uint32_t __SCRAMBLER_POLY = 0x21;
@@ -76,15 +90,9 @@ static const uint32_t __SCRAMBLER_SEED = 0x00;
 static const uint32_t __SCRAMBLER_ORDER = 16;
 
 /**
- * The interval of the CW beacon
- * Around 3 CWs per orbit pass
+ * The interval of the WOD and other beacons.
  */
-static const uint32_t __CW_INTERVAL_MS = 140000;
-
-/**
- * The interval of the WOD beacon.
- */
-static const uint32_t __WOD_INTERVAL_MS = 30000;
+static const uint32_t __TX_INTERVAL_MS = 30000;
 
 /**
  * The OBC sends a WOD to the COMMS every 1 minute. The WOD

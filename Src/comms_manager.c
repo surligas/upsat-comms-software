@@ -61,7 +61,7 @@ static SHA256_CTX sha_ctx;
 static inline void
 rf_tx_shutdown()
 {
-  comms_write_persistent_word(__COMMS_RF_OFF_KEY);
+  comms_write_persistent_word(__COMMS_RF_OFF_KEY, __COMMS_RF_KEY_FLASH_OFFSET);
 }
 
 /**
@@ -70,7 +70,7 @@ rf_tx_shutdown()
 static inline void
 rf_tx_enable()
 {
-  comms_write_persistent_word(__COMMS_RF_ON_KEY);
+  comms_write_persistent_word(__COMMS_RF_ON_KEY, __COMMS_RF_KEY_FLASH_OFFSET);
 }
 
 /**
@@ -86,7 +86,7 @@ is_tx_enabled()
   uint32_t cnt;
   uint32_t val;
 
-  val = comms_read_persistent_word();
+  val = comms_read_persistent_word(__COMMS_RF_KEY_FLASH_OFFSET);
   cnt = bit_count(val ^ __COMMS_RF_ON_KEY);
   if(cnt < 16) {
     return 1;
@@ -346,6 +346,13 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
   }
   else if(tx_jobs->tx_wod){
     tx_jobs->tx_wod = 0;
+    ret = comms_wod_tx();
+  }
+  else if(tx_jobs->tx_ext_wod){
+    tx_jobs->tx_ext_wod = 0;
+    /*
+     * FIXME: Replace with the ex_WOD routine
+     */
     ret = comms_wod_tx();
   }
   else{

@@ -20,22 +20,30 @@
 #include "persistent_mem.h"
 #include "flash.h"
 
+uint32_t
+comms_persistent_mem_init()
+{
+  return flash_INIT();
+}
+
 /**
  * Stores a word at the one word long flash memory of the processor
  * @param word the data that are going to be stored
+ * @param offset the offset from the start of the flash memory blocksize_t offset
  */
 void
-comms_write_persistent_word(uint32_t word)
+comms_write_persistent_word(uint32_t word, size_t offset)
 {
-  flash_write_trasmit(word);
+  flash_write_trasmit(word, offset);
 }
 
 /**
  * Reads a word from the flash memory
+ * @param offset the offset from the start of the flash memory blocksize_t offset
  * @return the word value
  */
 uint32_t
-comms_read_persistent_word()
+comms_read_persistent_word(size_t offset)
 {
-  return flash_read_trasmit();
+  return flash_read_trasmit(offset);
 }
