@@ -84,7 +84,7 @@ volatile uint8_t rx_thr_flag = 0;
 uint8_t uart_temp[512];
 uint8_t debug_temp[256];
 
-
+extern comms_rf_stat_t comms_stats;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,6 +114,7 @@ int main(void)
   /* USER CODE BEGIN 1 */
   uint8_t rst_src;
   uint32_t tick;
+  uint32_t heartbeat_tick;
   comms_tx_job_list_t tx_jobs;
   uint32_t now;
   uint32_t tx_job_cnt = 0;
@@ -170,16 +171,23 @@ int main(void)
   /* Sent to OBC the reason of re-booting */
   HAL_reset_source(&rst_src);
   event_boot(rst_src, 0);
-
+  comms_rf_stats_set_reset_src(&comms_stats, rst_src);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 
   tick = HAL_GetTick();
+  heartbeat_tick = tick;
   memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
   while (1) {
     now = HAL_GetTick();
+    /* Sent a heartbeat message to the EPS*/
+    if(now - heartbeat_tick > __HEARTBEAT_EPS_INTERVAL_MS){
+      heartbeat_tick = now;
+      sys_refresh();
+    }
+
     if(now - tick > __TX_INTERVAL_MS){
       /*
        * Check which type of TX job should be performed. At this time any
@@ -218,7 +226,6 @@ int main(void)
       if(bit_count(tx_job_desc) > 4){
 	tx_job_desc = __COMMS_DEFAULT_HEADLESS_TX_PATTERN;
       }
-
     }
 
     comms_routine_dispatcher(&tx_jobs);

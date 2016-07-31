@@ -67,8 +67,17 @@ comms_rf_stats_update(comms_rf_stat_t *h)
 }
 
 void
+comms_rf_stats_set_reset_src (comms_rf_stat_t *h, uint8_t src)
+{
+  if (h == NULL) {
+    return;
+  }
+  h->rst_src = src;
+}
+
+void
 comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
-			      int32_t error)
+			      int16_t error)
 {
   if(h == NULL){
     return;
@@ -86,7 +95,7 @@ comms_rf_stats_frame_received(comms_rf_stat_t *h, uint8_t succesfull,
 
 void
 comms_rf_stats_frame_transmitted(comms_rf_stat_t *h, uint8_t succesfull,
-				 int32_t error)
+				 int16_t error)
 {
   if(h == NULL){
     return;

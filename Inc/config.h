@@ -95,6 +95,11 @@ static const uint32_t __SCRAMBLER_ORDER = 16;
 static const uint32_t __TX_INTERVAL_MS = 30000;
 
 /**
+ * The interval of the heart beat message to the EPS system
+ */
+static const uint32_t __HEARTBEAT_EPS_INTERVAL_MS = 120000;
+
+/**
  * The OBC sends a WOD to the COMMS every 1 minute. The WOD
  * interval is far less, so the COMMS transmits in these intervals the same
  * WOD. However, if the threshold is reached, this means that the communication
