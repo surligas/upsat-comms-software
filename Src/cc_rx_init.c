@@ -55,7 +55,7 @@ static const registerSetting_t RX_preferredSettings[]=
   {IQIC,              0xC6},
   {CHAN_BW,           0x08},
   {MDMCFG0,           0x05},
-  {SYMBOL_RATE2,      0x73},
+  {SYMBOL_RATE2,      0x43},
   {SYMBOL_RATE1,      0xA9},
   {SYMBOL_RATE0,      0x2A},
   {AGC_REF,           0x20},

@@ -117,7 +117,7 @@ int main(void)
   comms_tx_job_list_t tx_jobs;
   uint32_t now;
   uint32_t tx_job_cnt = 0;
-  uint32_t tx_job_desc = __COMMS_DEFAULT_HEADLESH_TX_PATTERN;
+  uint32_t tx_job_desc = __COMMS_DEFAULT_HEADLESS_TX_PATTERN;
   /* USER CODE END 1 */
 
   /* MCU Configuration----------------------------------------------------------*/
@@ -209,14 +209,14 @@ int main(void)
        * Now it's a good time to re-read the flash, in case the
        * headless transmission scheme altered
        */
-      tx_job_desc = comms_read_persistent_word(__COMMS_HEADLESH_TX_FLASH_OFFSET);
+      tx_job_desc = comms_read_persistent_word(__COMMS_HEADLESS_TX_FLASH_OFFSET);
 
       /*
        * In case the ex_WOD number is greater than the WOD, shit happened.
-       * Show fall back to the default
+       * So fall back to the default
        */
       if(bit_count(tx_job_desc) > 4){
-	tx_job_desc = __COMMS_DEFAULT_HEADLESH_TX_PATTERN;
+	tx_job_desc = __COMMS_DEFAULT_HEADLESS_TX_PATTERN;
       }
 
     }

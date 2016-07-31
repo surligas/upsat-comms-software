@@ -70,9 +70,9 @@ static const uint32_t __COMMS_RF_KEY_FLASH_OFFSET = 0x0;
  * The offset from the beginning of the flash block in which
  * the headless transmission pattern of the
  */
-static const uint32_t __COMMS_HEADLESH_TX_FLASH_OFFSET = 0x4;
+static const uint32_t __COMMS_HEADLESS_TX_FLASH_OFFSET = 0x4;
 
-static const uint32_t __COMMS_DEFAULT_HEADLESH_TX_PATTERN = 0xa2;
+static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0xa2;
 
 /**
  * The scrambler polynomial
