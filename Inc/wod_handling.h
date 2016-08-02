@@ -37,6 +37,28 @@
 #define WOD_MAX_DATASETS 32
 
 /**
+ * The length if the exWOD frame ID field
+ */
+#define COMMS_EX_WOD_FRAME_ID_LEN 1
+
+/**
+ * The total size of an exWOD frame
+ */
+#define COMMS_EX_WOD_TOTAL_SIZE 201
+
+/**
+ * The absolute offset of the COMMS exWOD information.
+ * NOTE: This offset corresponds from the beginning of the exWOD frame
+ * including the exWOD frame ID
+ */
+#define COMMS_EX_WOD_COMMS_OFFSET 51
+
+/**
+ * The size of the exWOD information regarding the COMMS subsystem
+ */
+#define COMMS_EX_WOD_COMMS_SIZE 29
+
+/**
  * WOD packet as it handled inside the COMMS
  */
 typedef struct {

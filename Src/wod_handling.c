@@ -27,6 +27,7 @@ static comms_wod_t last_wod;
 static comms_ex_wod_t last_ex_wod;
 extern comms_rf_stat_t comms_stats;
 
+
 uint8_t
 bat_voltage_valid(uint8_t val)
 {
@@ -264,7 +265,27 @@ comms_ex_wod_tx()
   else{
     sid = EX_HEALTH_REP;
     hk_crt_empty_pkt_TM(&temp_pkt, GND_APP_ID, sid);
-    ret = tx_ecss(temp_pkt);
+
+    /*
+     * Now perform padding. Set the missing information from other
+     * subsystems to zero
+     */
+    memcpy(last_ex_wod.ex_wod, temp_pkt->data + COMMS_EX_WOD_FRAME_ID_LEN,
+	   temp_pkt->len - COMMS_EX_WOD_FRAME_ID_LEN);
+
+    /* Zero the leading and trailing missing values */
+    memset(temp_pkt->data + COMMS_EX_WOD_FRAME_ID_LEN, 0,
+	   COMMS_EX_WOD_TOTAL_SIZE);
+
+    /* Copy back properly the COMMS exWOD information at the right place */
+    memcpy(temp_pkt->data + COMMS_EX_WOD_COMMS_OFFSET,
+	   last_ex_wod.ex_wod, temp_pkt->len - COMMS_EX_WOD_FRAME_ID_LEN);
+
+    /* The exWOD has now different size */
+    temp_pkt->len = COMMS_EX_WOD_TOTAL_SIZE;
+
+    /* TX the exWOD. We deallocate the packet here explicitly */
+    ret = tx_ecss (temp_pkt);
     free_pkt(temp_pkt);
     if(ret != SATR_OK){
       ret = COMMS_STATUS_INVALID_FRAME;

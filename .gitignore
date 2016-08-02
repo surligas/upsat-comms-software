@@ -13,3 +13,6 @@ i# Object files
 
 Debug/
 .settings/
+
+docs/latex
+docs/html

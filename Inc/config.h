@@ -72,7 +72,7 @@ static const uint32_t __COMMS_RF_KEY_FLASH_OFFSET = 0x0;
  */
 static const uint32_t __COMMS_HEADLESS_TX_FLASH_OFFSET = 0x4;
 
-static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0xa2;
+static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0x10;
 
 /**
  * The scrambler polynomial
@@ -111,14 +111,14 @@ static const uint32_t __MAX_WOD_RETRASMISSIONS = 6;
 /**
  * Enables/disables the UART debug
  */
-#define COMMS_UART_DBG_EN 1
+#define COMMS_UART_DBG_EN 0
 #define COMMS_UART_BUF_LEN 512
 
 /**
  * If set to 1, the UART target is the OBC. If set to 0, the UART target
  * is the FTDI debugging dongle
  */
-#define COMMS_UART_DEST_OBC 0
+#define COMMS_UART_DEST_OBC 1
 /**
  * The default time out period is 4 seconds
  */
