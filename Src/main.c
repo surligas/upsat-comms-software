@@ -154,8 +154,6 @@ int main(void)
   /*Must use this in order the compiler occupies flash sector 3*/
   comms_persistent_mem_init();
 
-  HAL_Delay (4000);
-
   /* Initialize the systemview */
   SEGGER_SYSVIEW_Conf();
   sysview_init();

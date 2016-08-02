@@ -392,6 +392,9 @@ comms_init ()
   uint8_t cc_id_tx;
   uint8_t cc_id_rx;
 
+  /* Wait for the EPS to settle */
+  HAL_Delay(1000);
+
   /* fetch tx id */
   cc_tx_rd_reg (0x2f8F, &cc_id_tx);
 
@@ -440,7 +443,4 @@ comms_init ()
   pkt_pool_INIT ();
 
   comms_wod_init();
-
-  /* Wait a little and we are ready! */
-  HAL_Delay(1000);
 }
