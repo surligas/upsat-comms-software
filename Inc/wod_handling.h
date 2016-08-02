@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "utils.h"
+#include "ax25.h"
 #include <math.h>
 
 /**
@@ -45,20 +46,32 @@ typedef struct {
   uint8_t valid;
 } comms_wod_t;
 
+typedef struct {
+  uint8_t ex_wod[AX25_MAX_FRAME_LEN];
+  size_t len;
+  uint8_t valid;
+} comms_ex_wod_t;
+
 
 uint8_t
 wod_convert_temperature(float val);
 
 void
 store_wod_obc(const uint8_t *obc_wod, size_t len);
+void
+store_ex_wod_obc(const uint8_t *obc_wod, size_t len);
 
 void
 comms_wod_init();
+void
+comms_ex_wod_init();
 
 uint8_t
 bat_voltage_valid(uint8_t val);
 int32_t
 comms_wod_tx();
+int32_t
+comms_ex_wod_tx();
 uint8_t
 bat_current_valid(uint8_t val);
 uint8_t

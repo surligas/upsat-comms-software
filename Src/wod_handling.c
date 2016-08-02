@@ -20,9 +20,11 @@
 #include "status.h"
 #include "comms_manager.h"
 #include "stats.h"
+#include "services.h"
 #include <string.h>
 
 static comms_wod_t last_wod;
+static comms_ex_wod_t last_ex_wod;
 extern comms_rf_stat_t comms_stats;
 
 uint8_t
@@ -169,6 +171,11 @@ wod_convert_temperature(float val)
   return (uint8_t)((val + 15.0) / 0.25);
 }
 
+/**
+ * Stores the WOD from the OBC
+ * @param obc_wod the buffer with the WOD, as it comes from the OBC
+ * @param len the length of the WOD buffer
+ */
 void
 store_wod_obc(const uint8_t *obc_wod, size_t len)
 {
@@ -180,6 +187,17 @@ store_wod_obc(const uint8_t *obc_wod, size_t len)
   }
 }
 
+void
+store_ex_wod_obc(const uint8_t *obc_wod, size_t len)
+{
+  if(len > AX25_MAX_FRAME_LEN){
+    return;
+  }
+  memcpy(last_ex_wod.ex_wod, obc_wod, len);
+  last_ex_wod.len = len;
+  last_ex_wod.valid = 1;
+}
+
 /**
  * Initializes the COMMS WOD structure to the initial defaults
  */
@@ -189,6 +207,20 @@ comms_wod_init()
   memset(&last_wod, 0, sizeof(comms_wod_t));
 }
 
+/**
+ * Initializes the COMMS exWOD structure to the initial defaults
+ */
+void
+comms_ex_wod_init()
+{
+  memset(&last_ex_wod, 0, sizeof(comms_ex_wod_t));
+}
+
+/**
+ * Sends the last stored valid WOD. If now WOD has been
+ * received, the transmitted WOD has all its fields zeroed.
+ * @return number of bytes sent or negative error code
+ */
 int32_t
 comms_wod_tx()
 {
@@ -207,6 +239,36 @@ comms_wod_tx()
     memset(last_wod.wod, 0, sizeof(last_wod.wod));
     ret = send_payload(last_wod.wod, sizeof(last_wod.wod), 1,
 		       COMMS_DEFAULT_TIMEOUT_MS);
+  }
+  return ret;
+}
+
+/**
+ * Sends the last stored valid exWOD. If now exWOD has been
+ * received from OBC, the transmitted exWOD has only the information
+ * originated from the COMMS subsystem.
+ *
+ * @return number of bytes sent or negative error code
+ */
+int32_t
+comms_ex_wod_tx()
+{
+  int32_t ret;
+  tc_tm_pkt *temp_pkt = 0;
+  HK_struct_id sid;
+
+  if(last_ex_wod.valid){
+    ret = send_payload(last_ex_wod.ex_wod, last_ex_wod.len, 0,
+		       COMMS_DEFAULT_TIMEOUT_MS);
+  }
+  else{
+    sid = EX_HEALTH_REP;
+    hk_crt_empty_pkt_TM(&temp_pkt, GND_APP_ID, sid);
+    ret = tx_ecss(temp_pkt);
+    free_pkt(temp_pkt);
+    if(ret != SATR_OK){
+      ret = COMMS_STATUS_INVALID_FRAME;
+    }
   }
   return ret;
 }

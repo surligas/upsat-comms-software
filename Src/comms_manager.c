@@ -350,10 +350,7 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
   }
   else if(tx_jobs->tx_ext_wod){
     tx_jobs->tx_ext_wod = 0;
-    /*
-     * FIXME: Replace with the ex_WOD routine
-     */
-    ret = comms_wod_tx();
+    ret = comms_ex_wod_tx();
   }
   else{
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
@@ -396,10 +393,10 @@ comms_init ()
   HAL_Delay(1000);
 
   /* fetch tx id */
-  cc_tx_rd_reg (0x2f8F, &cc_id_tx);
+  cc_tx_rd_reg (0x2F8F, &cc_id_tx);
 
   /* fetch rx id */
-  cc_rx_rd_reg (0x2f8F, &cc_id_rx);
+  cc_rx_rd_reg (0x2F8F, &cc_id_rx);
 
   /* Configure TX CC1120 */
   tx_registerConfig ();
@@ -443,4 +440,5 @@ comms_init ()
   pkt_pool_INIT ();
 
   comms_wod_init();
+  comms_ex_wod_init();
 }
