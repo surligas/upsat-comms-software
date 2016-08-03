@@ -226,6 +226,12 @@ int32_t
 comms_wod_tx()
 {
   int32_t ret = 0;
+
+  /* Check if the satellite is during command and control phase */
+  if(is_cmd_ctrl_enabled()) {
+    return 0;
+  }
+
   if(last_wod.valid && last_wod.tx_cnt < 6) {
     ret = send_payload(last_wod.wod, last_wod.len, 1, COMMS_DEFAULT_TIMEOUT_MS);
     if(ret > 0){
@@ -257,6 +263,11 @@ comms_ex_wod_tx()
   int32_t ret;
   tc_tm_pkt *temp_pkt = 0;
   HK_struct_id sid;
+
+  /* Check if the satellite is during command and control phase */
+  if(is_cmd_ctrl_enabled()) {
+    return 0;
+  }
 
   if(last_ex_wod.valid){
     ret = send_payload(last_ex_wod.ex_wod, last_ex_wod.len, 0,

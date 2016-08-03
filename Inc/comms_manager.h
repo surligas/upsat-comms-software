@@ -30,10 +30,15 @@
  * Struct containing a set of TX jobs that the dispatcher should take care
  */
 typedef struct {
-  uint8_t tx_cw;
-  uint8_t tx_wod;
-  uint8_t tx_ext_wod;
+  uint8_t tx_cw; 	/**< TX a CW beacon */
+  uint8_t tx_wod;	/**< TX a WOD beacon */
+  uint8_t tx_ext_wod;   /**< TX an exWOD beacon */
 } comms_tx_job_list_t;
+
+typedef struct {
+  uint32_t time_ms;
+  uint8_t is_armed;
+} comms_cmd_ctrl_t;
 
 int32_t
 recv_payload(uint8_t *out, size_t len, size_t timeout_ms);
@@ -49,6 +54,12 @@ send_cw_beacon();
 
 uint8_t
 is_tx_enabled();
+
+uint8_t
+is_cmd_ctrl_enabled();
+
+void
+set_cmd_and_ctrl_period(uint8_t enable);
 
 void
 comms_init();

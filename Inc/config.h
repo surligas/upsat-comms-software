@@ -75,6 +75,12 @@ static const uint32_t __COMMS_HEADLESS_TX_FLASH_OFFSET = 0x4;
 static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0x10;
 
 /**
+ * The period after each Command and Control that the satellite
+ * will block the beacon transmissions
+ */
+static const uint32_t __COMMS_CMD_AND_CTRL_PERIOD_MS = 60000;
+
+/**
  * The scrambler polynomial
  */
 static const uint32_t __SCRAMBLER_POLY = 0x21;

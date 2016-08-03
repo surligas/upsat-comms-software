@@ -49,6 +49,12 @@ extern UART_HandleTypeDef huart5;
 extern IWDG_HandleTypeDef hiwdg;
 extern struct _comms_data comms_data;
 comms_rf_stat_t comms_stats;
+
+/**
+ * Timer that keeps track of the Command and Control phase
+ */
+comms_cmd_ctrl_t cmd_and_ctrl;
+
 /**
  * Used to delay the update of the internal statistics and save some cycles
  */
@@ -92,6 +98,42 @@ is_tx_enabled()
     return 1;
   }
   return 0;
+}
+
+/**
+ * Returns if the COMMS is during a command and control state.
+ *
+ * @return 1 if it is during command and control, 0 otherwise
+ */
+uint8_t
+is_cmd_ctrl_enabled()
+{
+  uint32_t now;
+  now = HAL_GetTick();
+  if(cmd_and_ctrl.is_armed){
+    /* Maybe the armed state is obsolete */
+    if (now < cmd_and_ctrl.time_ms
+	|| now - cmd_and_ctrl.time_ms > __COMMS_CMD_AND_CTRL_PERIOD_MS) {
+      cmd_and_ctrl.is_armed = 0;
+      return 0;
+    }
+    else {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+/**
+ * Sets the satellite on/off command and control phase
+ * @param enable true in case the command and control period should be activated,
+ * false otherwise
+ */
+void
+set_cmd_and_ctrl_period(uint8_t enable)
+{
+  cmd_and_ctrl.is_armed = enable;
+  cmd_and_ctrl.time_ms = HAL_GetTick();
 }
 
 /**
@@ -275,6 +317,12 @@ int32_t
 send_cw_beacon()
 {
   size_t i = 0;
+
+  /* Check if the satellite is during command and control phase */
+  if(is_cmd_ctrl_enabled()) {
+    return 0;
+  }
+
   memset(send_buffer, 0, AX25_MAX_FRAME_LEN);
   send_buffer[i++] = 'U';
   send_buffer[i++] = 'P';
@@ -304,7 +352,7 @@ send_cw_beacon()
  *
  * @param send_cw pointer to a boolean indicating if the COMMS should transmit
  * a CW beacon. It will be reset from this function only if the beacon
- * has been succesfully transmitted or the TX subsystem encountered an error
+ * has been successfully transmitted or the TX subsystem encountered an error
  * during transmission. This is happening because we give a priority to
  * the RX event.
  * @return COMMS_STATUS_OK on success or an appropriate error code.
@@ -327,6 +375,7 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
     if(ret > 0) {
       ret = rx_ecss(recv_buffer, ret);
       if(ret == SATR_OK){
+	set_cmd_and_ctrl_period(1);
 	comms_rf_stats_frame_received(&comms_stats, FRAME_OK, 0);
 	LOG_UART_DBG(&huart5, "All ok %d", ret);
       }
@@ -431,8 +480,6 @@ comms_init ()
   /* Initialize the CC1120 in RX mode */
   cc_rx_cmd(SRX);
 
-  delay_cnt = HAL_GetTick();
-
   /*Start the watchdog */
   HAL_IWDG_Start(&hiwdg);
 
@@ -440,4 +487,9 @@ comms_init ()
 
   comms_wod_init();
   comms_ex_wod_init();
+
+  /* Initialize all the time counters */
+  delay_cnt = HAL_GetTick();
+
+  set_cmd_and_ctrl_period(0);
 }
