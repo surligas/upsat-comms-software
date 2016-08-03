@@ -107,9 +107,6 @@ cw_get_uptime_hours_char (comms_rf_stat_t *h)
   else if (h->uptime_h < 10) {
     ret = 'H';
   }
-  else if (h->uptime_h < 10) {
-    ret = 'H';
-  }
   else if (h->uptime_h < 12) {
     ret = 'I';
   }

@@ -141,7 +141,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
 
   /* Key was ok. now check the actual command */
   sw_key_ptr = (uint32_t *)(in + cmd_hdr_len + __COMMS_RF_SWITCH_KEY_LEN);
-  flag = *sw_key_ptr == __COMMS_RF_ON_KEY;
+  flag = (*sw_key_ptr == __COMMS_RF_ON_KEY);
   if(flag){
     rf_tx_enable();
     return 1;
@@ -151,8 +151,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
    * The previous command was not for switching on the RF. Perhaps it is for
    * shutting it down
    */
-  flag = 0;
-  flag = *sw_key_ptr == __COMMS_RF_OFF_KEY;
+  flag = (*sw_key_ptr == __COMMS_RF_OFF_KEY);
 
   if(flag) {
     rf_tx_shutdown();

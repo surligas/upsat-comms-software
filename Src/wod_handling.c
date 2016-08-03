@@ -263,26 +263,8 @@ comms_ex_wod_tx()
 		       COMMS_DEFAULT_TIMEOUT_MS);
   }
   else{
-    sid = EX_HEALTH_REP;
+    sid = EXT_WOD_REP;
     hk_crt_empty_pkt_TM(&temp_pkt, GND_APP_ID, sid);
-
-    /*
-     * Now perform padding. Set the missing information from other
-     * subsystems to zero
-     */
-    memcpy(last_ex_wod.ex_wod, temp_pkt->data + COMMS_EX_WOD_FRAME_ID_LEN,
-	   temp_pkt->len - COMMS_EX_WOD_FRAME_ID_LEN);
-
-    /* Zero the leading and trailing missing values */
-    memset(temp_pkt->data + COMMS_EX_WOD_FRAME_ID_LEN, 0,
-	   COMMS_EX_WOD_TOTAL_SIZE);
-
-    /* Copy back properly the COMMS exWOD information at the right place */
-    memcpy(temp_pkt->data + COMMS_EX_WOD_COMMS_OFFSET,
-	   last_ex_wod.ex_wod, temp_pkt->len - COMMS_EX_WOD_FRAME_ID_LEN);
-
-    /* The exWOD has now different size */
-    temp_pkt->len = COMMS_EX_WOD_TOTAL_SIZE;
 
     /* TX the exWOD. We deallocate the packet here explicitly */
     ret = tx_ecss (temp_pkt);

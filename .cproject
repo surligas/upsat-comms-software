@@ -94,9 +94,10 @@
 					</fileInfo>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.753235508" name="scheduling_service.h" rcbsApplicability="disable" resourcePath="services/scheduling_service.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.1402458675" name="large_data_service.h" rcbsApplicability="disable" resourcePath="services/large_data_service.h" toolsToInvoke=""/>
+					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.891623775" name="time_management_service.h" rcbsApplicability="disable" resourcePath="services/time_management_service.h" toolsToInvoke=""/>
 					<fileInfo id="fr.ac6.managedbuild.config.gnu.cross.exe.debug.707804479.316465716" name="mass_storage_service.h" rcbsApplicability="disable" resourcePath="services/mass_storage_service.h" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="core/time_management.h|core/time_management.c|core/su_mnlp.h|core/su_mnlp.c|core/gps.h|core/gps.c|services/scheduling_service.h|services/scheduling_service.c|services/su_mnlp.h|services/su_mnlp.c|services/time_management.c|services/time_management.h|services/mass_storage_service.h|services/mass_storage_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="services/time_management_service.h|services/time_management_service.c|core/time_management.h|core/time_management.c|core/su_mnlp.h|core/su_mnlp.c|core/gps.h|core/gps.c|services/scheduling_service.h|services/scheduling_service.c|services/su_mnlp.h|services/su_mnlp.c|services/time_management.c|services/time_management.h|services/mass_storage_service.h|services/mass_storage_service.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
