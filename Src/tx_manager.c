@@ -23,7 +23,8 @@
 #include "status.h"
 #include "cw.h"
 
-static uint8_t tmp_buf[AX25_PREAMBLE_LEN + 2 * AX25_MAX_FRAME_LEN];
+static uint8_t tmp_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN
+		       + AX25_MAX_FRAME_LEN + AX25_MAX_ADDR_LEN];
 static cw_pulse_t cw_buf[AX25_MAX_FRAME_LEN * 10];
 
 /**

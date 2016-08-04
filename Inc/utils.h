@@ -177,14 +177,14 @@ reverse_uint32_bytes (uint32_t i)
       | (_bytes_reversed[(i >> 24) & 0xff]);
 }
 
-static inline uint8_t
+static inline uint32_t
 min(uint32_t x, uint32_t y)
 {
   return x < y ? x : y;
 }
 
-static inline uint8_t
-max(uint8_t x, uint8_t y)
+static inline uint32_t
+max(uint32_t x, uint32_t y)
 {
   return x > y ? x : y;
 }

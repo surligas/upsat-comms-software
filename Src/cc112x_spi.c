@@ -322,7 +322,8 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
     if (in_fifo >= CC1120_TXFIFO_IRQ_THR && size != issue_len && bytes_left) {
       timeout = 1;
       while (HAL_GetTick () - start_tick < timeout_ms) {
-	delay_us(1600);
+        /* Remove this and the satellite will EXPLODE! */
+	delay_us(800);
         if (tx_thr_flag) {
           timeout = 0;
           break;

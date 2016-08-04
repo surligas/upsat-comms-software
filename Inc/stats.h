@@ -46,6 +46,9 @@ typedef struct {
   uint16_t invalid_dest_frames_cnt;
   uint32_t last_utc;
   uint8_t rst_src;
+  uint16_t sw_on_cmd_cnt;
+  uint16_t sw_off_cmd_cnt;
+  uint16_t sw_cmd_failed_cnt;
 } comms_rf_stat_t;
 
 void
@@ -76,4 +79,10 @@ comms_rf_stats_get_temperature(comms_rf_stat_t *h);
 
 void
 comms_rf_stats_wod_received(comms_rf_stat_t *h, const uint8_t *obc_wod);
+
+void
+comms_rf_stats_sw_cmd_received(comms_rf_stat_t *h, uint8_t on);
+
+void
+comms_rf_stats_sw_cmd_failed(comms_rf_stat_t *h);
 #endif /* INC_STATS_H_ */

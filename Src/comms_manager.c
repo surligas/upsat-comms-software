@@ -39,7 +39,9 @@
 #define __FILE_ID__ 25
 
 static uint8_t interm_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN + 2];
-static uint8_t spi_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN];
+static uint8_t spi_buf[AX25_PREAMBLE_LEN
+		       + AX25_POSTAMBLE_LEN
+		       + AX25_MAX_FRAME_LEN + AX25_MAX_ADDR_LEN];
 static uint8_t recv_buffer[AX25_MAX_FRAME_LEN];
 static uint8_t send_buffer[AX25_MAX_FRAME_LEN];
 
@@ -67,6 +69,7 @@ static SHA256_CTX sha_ctx;
 static inline void
 rf_tx_shutdown()
 {
+  comms_rf_stats_sw_cmd_received(&comms_stats, 0);
   comms_write_persistent_word(__COMMS_RF_OFF_KEY, __COMMS_RF_KEY_FLASH_OFFSET);
 }
 
@@ -76,25 +79,26 @@ rf_tx_shutdown()
 static inline void
 rf_tx_enable()
 {
+  comms_rf_stats_sw_cmd_received(&comms_stats, 1);
   comms_write_persistent_word(__COMMS_RF_ON_KEY, __COMMS_RF_KEY_FLASH_OFFSET);
 }
 
 /**
  * Checks if the TX is enabled or not.
- * For robustness, this routine does not check the flash value for equality.
- * Instead, it counts the number of same bits and if the number is greater than 16 the
- * stored value is considered as true. Otherwise, false.
+ * To avoid the loss of TX due to flash error, this function check if the
+ * COMMS TX is enabled by comparing with the COMMS OFF key. If the stored value
+ * is equals the OFF key, COMMS is considered in OFF state. Otherwise it is
+ * considered ON state.
+ *
  * @return 0 if the TX is disabled, 1 if it is enabled
  */
 uint8_t
 is_tx_enabled()
 {
-  uint32_t cnt;
   uint32_t val;
 
   val = comms_read_persistent_word(__COMMS_RF_KEY_FLASH_OFFSET);
-  cnt = bit_count(val ^ __COMMS_RF_ON_KEY);
-  if(cnt < 16) {
+  if(val != __COMMS_RF_OFF_KEY) {
     return 1;
   }
   return 0;
@@ -154,9 +158,7 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
   uint8_t sha_res[32];
 
   /* Due to length restrictions, this is definitely not an RF switch command */
-  if (len < cmd_hdr_len
-      || len
-	  < (cmd_hdr_len + __COMMS_RF_SWITCH_KEY_LEN + sizeof(__COMMS_RF_ON_KEY))) {
+  if (len < (cmd_hdr_len + sizeof(__COMMS_RF_ON_KEY))) {
     return 0;
   }
 
@@ -170,34 +172,42 @@ check_rf_switch_cmd(const uint8_t *in, size_t len)
     return 0;
   }
 
-  sha256_init(&sha_ctx);
-  sha256_update(&sha_ctx, in + cmd_hdr_len, __COMMS_RF_SWITCH_KEY_LEN);
-  sha256_final(&sha_ctx, sha_res);
-
-  /* Check if the received key matches the stored hash */
-  for(i = 0; i < 32; i++){
-    if(sha_res[i] != __COMMS_RF_SWITCH_HASH[i]) {
-      return 0;
-    }
-  }
-
-  /* Key was ok. now check the actual command */
-  sw_key_ptr = (uint32_t *)(in + cmd_hdr_len + __COMMS_RF_SWITCH_KEY_LEN);
-  flag = (*sw_key_ptr == __COMMS_RF_ON_KEY);
-  if(flag){
+  /*
+   * Now check if the command is for turning ON or OFF the COMMS.
+   * The ON command is constructed using the __COMMS_RF_SWITCH_CMD
+   * string followed by the ON key.
+   *
+   * On the other hand the OFF command, uses the same format having its own
+   * key. However, after the key, there is the security key upon which the
+   * satellite decides if the command is originating from a valid source.
+   */
+  sw_key_ptr = (uint32_t *)(in + cmd_hdr_len);
+  if(*sw_key_ptr == __COMMS_RF_ON_KEY) {
     rf_tx_enable();
     return 1;
   }
+  else if(*sw_key_ptr == __COMMS_RF_OFF_KEY) {
+    if(len < cmd_hdr_len + sizeof(__COMMS_RF_ON_KEY) + __COMMS_RF_SWITCH_KEY_LEN){
+      comms_rf_stats_sw_cmd_failed(&comms_stats);
+      return 0;
+    }
+    /* Compute the SHA-256 of the received key */
+    sha256_init(&sha_ctx);
+    sha256_update(&sha_ctx, in + cmd_hdr_len + sizeof(__COMMS_RF_OFF_KEY),
+		  __COMMS_RF_SWITCH_KEY_LEN);
+    sha256_final(&sha_ctx, sha_res);
 
-  /*
-   * The previous command was not for switching on the RF. Perhaps it is for
-   * shutting it down
-   */
-  flag = (*sw_key_ptr == __COMMS_RF_OFF_KEY);
-
-  if(flag) {
+    /* Check if the received key matches the stored hash */
+    for(i = 0; i < 32; i++){
+      if(sha_res[i] != __COMMS_RF_SWITCH_HASH[i]) {
+        return 0;
+      }
+    }
     rf_tx_shutdown();
     return 1;
+  }
+  else{
+    comms_rf_stats_sw_cmd_failed(&comms_stats);
   }
   return 0;
 }
@@ -403,22 +413,27 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
   else{
     import_pkt (OBC_APP_ID, &comms_data.obc_uart);
     export_pkt (OBC_APP_ID, &comms_data.obc_uart);
-  }
-
-  large_data_IDLE();
 
 
-  /*
-   * Update the statistics of the COMMS and reset the watchdog
-   * if there are strong reasons to do so.
-   */
-  now = HAL_GetTick();
-  if(now - delay_cnt > COMMS_STATS_PERIOD_MS) {
-    delay_cnt = now;
+    /*
+     * Update the statistics of the COMMS and reset the watchdog
+     * if there are strong reasons to do so.
+     *
+     * Also, refresh some internal system utilities.
+     */
+    now = HAL_GetTick ();
+    if (now - delay_cnt > COMMS_STATS_PERIOD_MS) {
+      delay_cnt = now;
 
-    comms_rf_stats_update(&comms_stats);
-    if(comms_stats.rx_failed_cnt < 10 && comms_stats.tx_failed_cnt < 5) {
-      HAL_IWDG_Refresh(&hiwdg);
+      comms_rf_stats_update (&comms_stats);
+      if (comms_stats.rx_failed_cnt < 10 && comms_stats.tx_failed_cnt < 5) {
+	HAL_IWDG_Refresh (&hiwdg);
+      }
+
+      large_data_IDLE ();
+      uart_killer (OBC_APP_ID, &comms_data.obc_uart, now);
+      pkt_pool_IDLE(now);
+      queue_IDLE(OBC_APP_ID);
     }
   }
 
@@ -437,13 +452,10 @@ comms_init ()
   uint8_t cc_id_tx;
   uint8_t cc_id_rx;
 
-  /* Wait for the EPS to settle */
-  HAL_Delay(1000);
-
-  /* fetch tx id */
+  /* fetch TX ID */
   cc_tx_rd_reg (0x2F8F, &cc_id_tx);
 
-  /* fetch rx id */
+  /* fetch RX ID */
   cc_rx_rd_reg (0x2F8F, &cc_id_rx);
 
   /* Configure TX CC1120 */
@@ -452,20 +464,17 @@ comms_init ()
   HAL_Delay (10);
   cc_tx_rd_reg (0x2f8F, &cc_id_tx);
 
-  //Configure RX CC1120
+  /* Configure RX CC1120 */
   rx_register_config ();
-
   HAL_Delay (10);
   cc_rx_rd_reg (0x2f8F, &cc_id_rx);
 
-  //Calibrate TX
+  /* Calibrate TX */
   tx_manualCalibration ();
-
   cc_tx_rd_reg (0x2f8F, &cc_id_tx);
 
-  //Calibrate RX
+  /* Calibrate RX */
   rx_manual_calibration ();
-
   cc_rx_rd_reg (0x2f8F, &cc_id_tx);
 
   /* Initialize the TX and RX routines */
@@ -479,9 +488,6 @@ comms_init ()
 
   /* Initialize the CC1120 in RX mode */
   cc_rx_cmd(SRX);
-
-  /*Start the watchdog */
-  HAL_IWDG_Start(&hiwdg);
 
   pkt_pool_INIT ();
 

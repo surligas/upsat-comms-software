@@ -28,8 +28,10 @@
 #define __FILE_ID__ 669
 
 static const uint8_t AX25_SYNC_FLAG_MAP_BIN[8] = {0, 1, 1, 1, 1, 1, 1, 0};
-uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN] = {0};
-uint8_t tmp_bit_buf[(AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN + AX25_MAX_FRAME_LEN) * 8] = {0};
+uint8_t interm_send_buf[AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN
+			+ AX25_MAX_FRAME_LEN + AX25_MAX_ADDR_LEN] = {0};
+uint8_t tmp_bit_buf[(AX25_PREAMBLE_LEN + AX25_POSTAMBLE_LEN
+    + AX25_MAX_FRAME_LEN + AX25_MAX_ADDR_LEN) * 8] = {0};
 uint8_t tmp_buf[AX25_MAX_FRAME_LEN * 2] = {0};
 
 scrambler_handle_t h_scrabler;

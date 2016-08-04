@@ -126,6 +126,9 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  /* Wait for the EPS to settle */
+  HAL_Delay(1000);
+
   /* Configure the system clock */
   SystemClock_Config();
 
@@ -150,6 +153,9 @@ int main(void)
   /* RX Pins RESETN_RX, CSN2 */
   HAL_GPIO_WritePin (GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
   HAL_GPIO_WritePin (GPIOE, GPIO_PIN_15, GPIO_PIN_SET);
+
+  /*Start the watchdog ASAP */
+  HAL_IWDG_Start(&hiwdg);
 
   /*Must use this in order the compiler occupies flash sector 3*/
   comms_persistent_mem_init();
@@ -181,7 +187,8 @@ int main(void)
   while (1) {
     now = HAL_GetTick();
     /* Sent a heartbeat message to the EPS*/
-    if(now - heartbeat_tick > __HEARTBEAT_EPS_INTERVAL_MS){
+    if(now < heartbeat_tick
+	|| now - heartbeat_tick > __HEARTBEAT_EPS_INTERVAL_MS){
       heartbeat_tick = now;
       sys_refresh();
     }
@@ -228,10 +235,6 @@ int main(void)
 
     comms_routine_dispatcher(&tx_jobs);
 
-
-    uart_killer (OBC_APP_ID, &comms_data.obc_uart, now);
-    pkt_pool_IDLE(now);
-    queue_IDLE(OBC_APP_ID);
 
   /* USER CODE END WHILE */
 

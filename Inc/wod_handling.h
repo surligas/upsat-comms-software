@@ -36,11 +36,14 @@
  */
 #define WOD_MAX_DATASETS 32
 
+#define WOD_SIZE (sizeof(uint32_t)				\
+	+ ((WOD_DATASET_SIZE*8+1) * WOD_MAX_DATASETS / 8))
+
 /**
  * WOD packet as it handled inside the COMMS
  */
 typedef struct {
-  uint8_t wod[sizeof(uint32_t) + ((WOD_DATASET_SIZE*8+1) * WOD_MAX_DATASETS / 8)];
+  uint8_t wod[WOD_SIZE];
   size_t len;
   size_t tx_cnt;
   uint8_t valid;

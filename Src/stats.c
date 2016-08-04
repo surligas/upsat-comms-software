@@ -274,3 +274,38 @@ comms_rf_stats_wod_received(comms_rf_stat_t *h, const uint8_t *obc_wod)
   h->bus_3300_mA = get_wod_bus_3300_current(obc_wod);
   h->bus_5000_mA = get_wod_bus_5000_current(obc_wod);
 }
+
+/**
+ * Updates the internal statistic counters about the COMMS ON/OFF switch
+ * command.
+ *
+ * @param h h pointer to a valid handle
+ * @param on 1 for switch ON, 0 for switch OFF
+ */
+void
+comms_rf_stats_sw_cmd_received(comms_rf_stat_t *h, uint8_t on)
+{
+  if(h == NULL){
+    return;
+  }
+  if(on){
+    h->sw_on_cmd_cnt++;
+  }
+  else{
+    h->sw_off_cmd_cnt++;
+  }
+}
+
+/**
+ * This function increments the internal counter that tracks the invalid
+ * ON/OFF switch commands
+ * @param h h pointer to a valid handle
+ */
+void
+comms_rf_stats_sw_cmd_failed(comms_rf_stat_t *h)
+{
+  if(h == NULL){
+    return;
+  }
+  h->sw_cmd_failed_cnt++;
+}
