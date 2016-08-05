@@ -24,6 +24,7 @@
 #include "status.h"
 #include "scrambler.h"
 #include "cc_tx_init.h"
+#include "sysview.h"
 #include <string.h>
 
 extern SPI_HandleTypeDef hspi1;
@@ -544,6 +545,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     }
 
     if (timeout) {
+      SYSVIEW_PRINT("RX timeout. FIFO THR");
       /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
@@ -558,6 +560,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     rx_thr_flag = 0;
 
     if (ret) {
+      SYSVIEW_PRINT("RX FIFO ERROR");
       /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
@@ -577,6 +580,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     }
   }
   if (timeout) {
+    SYSVIEW_PRINT("RX timeout. PKT END");
     /* Flush and restart! */
     cc_rx_cmd (SFRX);
     cc_rx_cmd (SIDLE);

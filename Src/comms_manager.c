@@ -34,6 +34,7 @@
 #include "sensors.h"
 #include "wod_handling.h"
 #include "sha256.h"
+#include "sysview.h"
 
 #undef __FILE_ID__
 #define __FILE_ID__ 25
@@ -387,7 +388,6 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
       if(ret == SATR_OK){
 	set_cmd_and_ctrl_period(1);
 	comms_rf_stats_frame_received(&comms_stats, FRAME_OK, 0);
-	LOG_UART_DBG(&huart5, "All ok %d", ret);
       }
       else{
 	comms_rf_stats_frame_received(&comms_stats, !FRAME_OK, ret);
@@ -400,7 +400,6 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
   else if(tx_jobs->tx_cw){
     tx_jobs->tx_cw = 0;
     ret = send_cw_beacon();
-    LOG_UART_DBG(&huart5, "CW %d", ret);
   }
   else if(tx_jobs->tx_wod){
     tx_jobs->tx_wod = 0;
@@ -431,9 +430,7 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
       }
 
       large_data_IDLE ();
-      uart_killer (OBC_APP_ID, &comms_data.obc_uart, now);
       pkt_pool_IDLE(now);
-      queue_IDLE(OBC_APP_ID);
     }
   }
 
@@ -498,4 +495,5 @@ comms_init ()
   delay_cnt = HAL_GetTick();
 
   set_cmd_and_ctrl_period(0);
+  SYSVIEW_PRINT("COMMS init OK");
 }

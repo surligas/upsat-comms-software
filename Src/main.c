@@ -190,6 +190,7 @@ int main(void)
     if(now < heartbeat_tick
 	|| now - heartbeat_tick > __HEARTBEAT_EPS_INTERVAL_MS){
       heartbeat_tick = now;
+      SYSVIEW_PRINT("HEARTBEAT to EPS");
       sys_refresh();
     }
 

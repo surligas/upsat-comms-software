@@ -21,7 +21,11 @@
 #include "comms_manager.h"
 #include "stats.h"
 #include "services.h"
+#include "sysview.h"
 #include <string.h>
+
+#undef __FILE_ID__
+#define __FILE_ID__ 38
 
 static comms_wod_t last_wod;
 static comms_ex_wod_t last_ex_wod;
@@ -185,6 +189,7 @@ store_wod_obc(const uint8_t *obc_wod, size_t len)
   if(ret == COMMS_STATUS_OK){
     last_wod.valid = 1;
     last_wod.tx_cnt = 0;
+    SYSVIEW_PRINT("WOD from OBC stored");
   }
 }
 
