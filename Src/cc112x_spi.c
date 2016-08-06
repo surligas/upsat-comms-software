@@ -27,6 +27,9 @@
 #include "sysview.h"
 #include <string.h>
 
+#undef __FILE_ID__
+#define __FILE_ID__ 26
+
 extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern UART_HandleTypeDef huart5;
@@ -299,10 +302,13 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 
       /* Start the TX procedure */
       cc_tx_cmd (STX);
+      SYSVIEW_PRINT("CC TX: Issue: %u", issue_len);
     }
     else{
       issue_len = min(CC1120_TXFIFO_AVAILABLE_BYTES, size - gone - in_fifo);
       cc_tx_spi_write_fifo (data + gone + in_fifo, rec_data, issue_len);
+      SYSVIEW_PRINT("CC TX: Issue: %u GN: %u INFIFO: %u", issue_len,
+		    gone, in_fifo);
     }
     bytes_left -= issue_len;
 
@@ -333,6 +339,7 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 
       /* Timeout occurred. Abort */
       if (timeout) {
+	SYSVIEW_PRINT("CC TX: Timeout %u", __LINE__);
 	delay_us(1000);
 	cc_tx_cmd (SIDLE);
 	cc_tx_cmd (SFTX);
@@ -362,6 +369,7 @@ cc_tx_data_continuous (const uint8_t *data, size_t size, uint8_t *rec_data,
 
   /* Timeout occurred. Abort */
   if (timeout) {
+    SYSVIEW_PRINT("CC TX: Timeout %u", __LINE__);
     delay_us(1000);
     cc_tx_cmd (SIDLE);
     cc_tx_cmd (SFTX);
@@ -515,6 +523,11 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
   /*Reset all the RX-related flags */
   cc_rx_reset_irqs();
 
+  /* A FIFO error can occur */
+  if(!C_ASSERT(cc_rx_check_fifo_status())) {
+    return COMMS_STATUS_RXFIFO_ERROR;
+  }
+
   start_tick = HAL_GetTick ();
 
   /*
@@ -538,6 +551,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     /* Wait for the RX FIFO above threshold interrupt */
     timeout = 1;
     while (HAL_GetTick () - start_tick < timeout_ms) {
+      delay_us(800);
       if (rx_thr_flag) {
 	timeout = 0;
 	break;
@@ -545,7 +559,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     }
 
     if (timeout) {
-      SYSVIEW_PRINT("RX timeout. FIFO THR");
+      SYSVIEW_PRINT("RX timeout: %u", __LINE__);
       /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
@@ -560,7 +574,7 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
     rx_thr_flag = 0;
 
     if (ret) {
-      SYSVIEW_PRINT("RX FIFO ERROR");
+      SYSVIEW_PRINT("RX FIFO ERROR: %u", __LINE__);
       /* Flush and restart! */
       cc_rx_cmd (SFRX);
       cc_rx_cmd (SIDLE);
@@ -574,13 +588,14 @@ cc_rx_data_packet (uint8_t *out, size_t len, size_t timeout_ms)
   /* Wait for the packet end interrupt */
   timeout = 1;
   while (HAL_GetTick () - start_tick < timeout_ms) {
+    delay_us(800);
     if (rx_finished_flag) {
       timeout = 0;
       break;
     }
   }
   if (timeout) {
-    SYSVIEW_PRINT("RX timeout. PKT END");
+    SYSVIEW_PRINT("RX timeout: %u", __LINE__);
     /* Flush and restart! */
     cc_rx_cmd (SFRX);
     cc_rx_cmd (SIDLE);
@@ -665,8 +680,10 @@ cc_rx_cmd (uint8_t CMDStrobe)
 /**
  * Checks if the RX FIFO of the CC1120 encountered any error. If yes,
  * the FIFO is flushed and the RX CC1120 is set again in normal RX mode.
+ *
+ * @return 1 in case the CC1120 FIFO is ok, 0 otherwise
  */
-void
+uint8_t
 cc_rx_check_fifo_status()
 {
   uint8_t reg;
@@ -677,6 +694,8 @@ cc_rx_check_fifo_status()
     cc_rx_cmd (SIDLE);
     cc_rx_reset_irqs();
     cc_rx_cmd (SRX);
+    return 0;
   }
+  return 1;
 }
 

@@ -164,10 +164,8 @@ int main(void)
   SEGGER_SYSVIEW_Conf();
   sysview_init();
 
-
   /*Make all the proper initializations for the COMMS */
   comms_init();
-  LOG_UART_DBG(&huart5, "RF systems initialized and calibrated");
 
   /* UART initializations */
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
@@ -199,7 +197,7 @@ int main(void)
        * Check which type of TX job should be performed. At this time any
        * previous unfinished TX jobs are dropped.
        */
-      memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
+      memset((void *)&tx_jobs, 0, sizeof(comms_tx_job_list_t));
       tick = now;
 
       /* Zero ID always refer to CW beacon */

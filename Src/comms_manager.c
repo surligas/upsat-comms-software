@@ -62,6 +62,7 @@ comms_cmd_ctrl_t cmd_and_ctrl;
  * Used to delay the update of the internal statistics and save some cycles
  */
 static uint32_t delay_cnt;
+static uint32_t obc_tick;
 
 static SHA256_CTX sha_ctx;
 /**
@@ -410,8 +411,14 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
     ret = comms_ex_wod_tx();
   }
   else{
-    import_pkt (OBC_APP_ID, &comms_data.obc_uart);
-    export_pkt (OBC_APP_ID, &comms_data.obc_uart);
+    now = HAL_GetTick ();
+    if(now - obc_tick > __OBS_COMM_INTERVAL_MS){
+      obc_tick = now;
+      SYSVIEW_PRINT("OBC START CONTACT");
+      import_pkt (OBC_APP_ID, &comms_data.obc_uart);
+      export_pkt (OBC_APP_ID, &comms_data.obc_uart);
+      SYSVIEW_PRINT("OBC END CONTACT");
+    }
 
 
     /*
@@ -420,7 +427,6 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
      *
      * Also, refresh some internal system utilities.
      */
-    now = HAL_GetTick ();
     if (now - delay_cnt > COMMS_STATS_PERIOD_MS) {
       delay_cnt = now;
 
@@ -493,7 +499,6 @@ comms_init ()
 
   /* Initialize all the time counters */
   delay_cnt = HAL_GetTick();
-
+  obc_tick = delay_cnt;
   set_cmd_and_ctrl_period(0);
-  SYSVIEW_PRINT("COMMS init OK");
 }

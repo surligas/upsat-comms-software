@@ -103,7 +103,12 @@ static const uint32_t __TX_INTERVAL_MS = 30000;
 /**
  * The interval of the heart beat message to the EPS system
  */
-static const uint32_t __HEARTBEAT_EPS_INTERVAL_MS = 120000;
+static const uint32_t __HEARTBEAT_EPS_INTERVAL_MS = 30000;
+
+/**
+ * The interval of the communication with the OBC
+ */
+static const uint32_t __OBS_COMM_INTERVAL_MS = 500;
 
 /**
  * The OBC sends a WOD to the COMMS every 1 minute. The WOD
@@ -134,6 +139,7 @@ static const uint32_t __MAX_WOD_RETRASMISSIONS = 6;
  * The default COMMS statistics polling period
  */
 #define COMMS_STATS_PERIOD_MS 1000
+
 
 
 #endif /* CONFIG_H_ */

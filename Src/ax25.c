@@ -178,10 +178,8 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
 		   const size_t buffer_len)
 {
   uint8_t bit;
-  uint8_t prev_bit = 0;
+  uint8_t shift_reg = 0x0;
   size_t out_idx = 0;
-  size_t cont_1 = 0;
-  size_t total_cont_1 = 0;
   size_t i;
 
   /* Leading FLAG field does not need bit stuffing */
@@ -194,28 +192,12 @@ ax25_bit_stuffing (uint8_t *out, size_t *out_len, const uint8_t *buffer,
   buffer += AX25_PREAMBLE_LEN;
   for (i = 0; i < 8 * (buffer_len - AX25_PREAMBLE_LEN - AX25_POSTAMBLE_LEN); i++) {
     bit = (buffer[i / 8] >> (i % 8)) & 0x1;
+    shift_reg = (shift_reg << 1) | bit;
     out[out_idx++] = bit;
-
     /* Check if bit stuffing should be applied */
-    if (bit & prev_bit) {
-      cont_1++;
-      total_cont_1++;
-      if (cont_1 == 4) {
-	out[out_idx++] = 0;
-	cont_1 = 0;
-      }
-    }
-    else {
-      cont_1 = total_cont_1 = 0;
-    }
-    prev_bit = bit;
-
-    /*
-     * If the total number of continuous 1's is 15 the the frame should be
-     * dropped
-     */
-    if (total_cont_1 >= 14) {
-      return AX25_ENC_FAIL;
+    if((shift_reg & 0x1F) == 0x1F){
+      out[out_idx++] = 0;
+      shift_reg = 0x0;
     }
   }
 
