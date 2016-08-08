@@ -22,6 +22,7 @@
 #include "stats.h"
 #include "services.h"
 #include "sysview.h"
+#include "pkt_pool.h"
 #include <string.h>
 
 #undef __FILE_ID__
@@ -201,6 +202,7 @@ store_ex_wod_obc(const uint8_t *obc_wod, size_t len)
   }
   memcpy(last_ex_wod.ex_wod, obc_wod, len);
   last_ex_wod.len = len;
+  last_ex_wod.tx_cnt = 0;
   last_ex_wod.valid = 1;
 }
 
@@ -210,7 +212,7 @@ store_ex_wod_obc(const uint8_t *obc_wod, size_t len)
 void
 comms_wod_init()
 {
-  memset(&last_wod, 0, sizeof(comms_wod_t));
+  memset((void *)&last_wod, 0, sizeof(comms_wod_t));
 }
 
 /**
@@ -219,7 +221,7 @@ comms_wod_init()
 void
 comms_ex_wod_init()
 {
-  memset(&last_ex_wod, 0, sizeof(comms_ex_wod_t));
+  memset((void *)&last_ex_wod, 0, sizeof(comms_ex_wod_t));
 }
 
 /**
@@ -238,7 +240,7 @@ comms_wod_tx()
   }
 
   /* If the last OBC WOD was valid, send it but for a finite number of times */
-  if(last_wod.valid && last_wod.tx_cnt < 6) {
+  if(last_wod.valid && last_wod.tx_cnt < __WOD_VALID_REPEATS) {
     ret = send_payload(last_wod.wod, last_wod.len, 1, COMMS_DEFAULT_TIMEOUT_MS);
     if(ret > 0){
       last_wod.tx_cnt++;
@@ -274,9 +276,27 @@ comms_ex_wod_tx()
     return 0;
   }
 
-  if(last_ex_wod.valid){
-    ret = send_payload(last_ex_wod.ex_wod, last_ex_wod.len, 0,
-		       COMMS_DEFAULT_TIMEOUT_MS);
+  if(last_ex_wod.valid && last_ex_wod.tx_cnt < __WOD_VALID_REPEATS){
+    temp_pkt = get_pkt(PKT_NORMAL);
+    if(!C_ASSERT(temp_pkt != NULL)) {
+      return COMMS_STATUS_NO_DATA;
+    }
+
+    crt_pkt(temp_pkt, (TC_TM_app_id)SYSTEM_APP_ID, TM, TC_ACK_NO,
+	    TC_HOUSEKEEPING_SERVICE, TM_HK_PARAMETERS_REPORT, GND_APP_ID);
+    memcpy(temp_pkt->data, last_ex_wod.ex_wod, last_ex_wod.len);
+    /* Set the SID and the size explicitly */
+    temp_pkt->data[0] = EXT_WOD_REP;
+    temp_pkt->len = last_ex_wod.len;
+
+    ret = tx_ecss (temp_pkt);
+    if(ret > 0) {
+      last_ex_wod.tx_cnt++;
+    }
+    free_pkt(temp_pkt);
+    if(ret != SATR_OK){
+      ret = COMMS_STATUS_INVALID_FRAME;
+    }
   }
   else{
     sid = EXT_WOD_REP;

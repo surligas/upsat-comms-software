@@ -72,13 +72,13 @@ static const uint32_t __COMMS_RF_KEY_FLASH_OFFSET = 0x0;
  */
 static const uint32_t __COMMS_HEADLESS_TX_FLASH_OFFSET = 0x4;
 
-static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0x10;
+static const uint32_t __COMMS_DEFAULT_HEADLESS_TX_PATTERN = 0x48;
 
 /**
  * The period after each Command and Control that the satellite
  * will block the beacon transmissions
  */
-static const uint32_t __COMMS_CMD_AND_CTRL_PERIOD_MS = 60000;
+static const uint32_t __COMMS_CMD_AND_CTRL_PERIOD_MS = 80000;
 
 /**
  * The scrambler polynomial
@@ -101,14 +101,26 @@ static const uint32_t __SCRAMBLER_ORDER = 16;
 static const uint32_t __TX_INTERVAL_MS = 30000;
 
 /**
+ * The number of times that a stored WOD or exWOD can be repeated
+ * until it is considered invalid
+ */
+static const uint32_t __WOD_VALID_REPEATS = 6;
+
+/**
  * The interval of the heart beat message to the EPS system
  */
-static const uint32_t __HEARTBEAT_EPS_INTERVAL_MS = 30000;
+static const uint32_t __HEARTBEAT_EPS_INTERVAL_MS = 100000;
 
 /**
  * The interval of the communication with the OBC
  */
 static const uint32_t __OBS_COMM_INTERVAL_MS = 500;
+
+/**
+ * The interval that the COMMS checks the RX FIFO of the
+ * CC1120 for overflow/underflow errors
+ */
+static const uint32_t __CC1120_RX_FIFO_CHK_INTERVAL_MS = 500;
 
 /**
  * The OBC sends a WOD to the COMMS every 1 minute. The WOD

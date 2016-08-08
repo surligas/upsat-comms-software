@@ -170,9 +170,8 @@ int main(void)
   /* UART initializations */
   HAL_UART_Receive_IT (&huart5, comms_data.obc_uart.uart_buf, UART_BUF_SIZE);
 
-  /* Sent to OBC the reason of re-booting */
+  /* Get the reason of re-booting */
   HAL_reset_source(&rst_src);
-  event_boot(rst_src, 0);
   comms_rf_stats_set_reset_src(&comms_stats, rst_src);
   /* USER CODE END 2 */
 
@@ -181,7 +180,7 @@ int main(void)
 
   tick = HAL_GetTick();
   heartbeat_tick = tick;
-  memset(&tx_jobs, 0, sizeof(comms_tx_job_list_t));
+  memset((void *)&tx_jobs, 0, sizeof(comms_tx_job_list_t));
   while (1) {
     now = HAL_GetTick();
     /* Sent a heartbeat message to the EPS*/

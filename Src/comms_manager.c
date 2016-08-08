@@ -61,8 +61,8 @@ comms_cmd_ctrl_t cmd_and_ctrl;
 /**
  * Used to delay the update of the internal statistics and save some cycles
  */
-static uint32_t delay_cnt;
-static uint32_t obc_tick;
+static uint32_t stats_tick;
+static uint32_t rx_fifo_tick;
 
 static SHA256_CTX sha_ctx;
 /**
@@ -411,15 +411,16 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
     ret = comms_ex_wod_tx();
   }
   else{
+    import_pkt (OBC_APP_ID, &comms_data.obc_uart);
+    export_pkt (OBC_APP_ID, &comms_data.obc_uart);
     now = HAL_GetTick ();
-    if(now - obc_tick > __OBS_COMM_INTERVAL_MS){
-      obc_tick = now;
-      SYSVIEW_PRINT("OBC START CONTACT");
-      import_pkt (OBC_APP_ID, &comms_data.obc_uart);
-      export_pkt (OBC_APP_ID, &comms_data.obc_uart);
-      SYSVIEW_PRINT("OBC END CONTACT");
-    }
 
+    /* High frequency checks on the RX FIFO affects drastically performance */
+    if(now - rx_fifo_tick > __CC1120_RX_FIFO_CHK_INTERVAL_MS){
+      rx_fifo_tick = now;
+      /* Check the RX FIFO status and act accordingly */
+      cc_rx_check_fifo_status();
+    }
 
     /*
      * Update the statistics of the COMMS and reset the watchdog
@@ -427,8 +428,8 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
      *
      * Also, refresh some internal system utilities.
      */
-    if (now - delay_cnt > COMMS_STATS_PERIOD_MS) {
-      delay_cnt = now;
+    if (now - stats_tick > COMMS_STATS_PERIOD_MS) {
+      stats_tick = now;
 
       comms_rf_stats_update (&comms_stats);
       if (comms_stats.rx_failed_cnt < 10 && comms_stats.tx_failed_cnt < 5) {
@@ -439,9 +440,6 @@ comms_routine_dispatcher(comms_tx_job_list_t *tx_jobs)
       pkt_pool_IDLE(now);
     }
   }
-
-  /* Check the RX FIFO status and act accordingly */
-  cc_rx_check_fifo_status();
 
   return ret;
 }
@@ -498,7 +496,7 @@ comms_init ()
   comms_ex_wod_init();
 
   /* Initialize all the time counters */
-  delay_cnt = HAL_GetTick();
-  obc_tick = delay_cnt;
+  stats_tick = HAL_GetTick();
+  rx_fifo_tick = stats_tick;
   set_cmd_and_ctrl_period(0);
 }

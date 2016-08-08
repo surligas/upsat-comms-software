@@ -52,6 +52,7 @@ typedef struct {
 typedef struct {
   uint8_t ex_wod[AX25_MAX_FRAME_LEN];
   size_t len;
+  size_t tx_cnt;
   uint8_t valid;
 } comms_ex_wod_t;
 
